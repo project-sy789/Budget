@@ -328,7 +328,15 @@ export default function AddLoan() {
                   <button
                     key={t.value}
                     type="button"
-                    onClick={() => set('loan_type', t.value)}
+                    onClick={() => {
+                      set('loan_type', t.value)
+                      // Auto-set matching interest period
+                      if (['daily', 'weekly', 'monthly', 'yearly'].includes(t.value)) {
+                        set('interest_period', t.value)
+                      } else if (t.value === 'upfront' || t.value === 'bullet' || t.value === 'reducing') {
+                        set('interest_period', 'monthly')
+                      }
+                    }}
                     className={`loan-type-btn ${form.loan_type === t.value ? 'active' : ''}`}
                   >
                     <span className="label">{t.label}</span>
@@ -458,14 +466,6 @@ export default function AddLoan() {
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">ระยะเวลาคิดดอก</label>
-                  <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
-                    {PERIODS.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
                 {needsInstallments && (
                   <div className="form-group">
                     <label className="form-label">จำนวนงวด</label>
