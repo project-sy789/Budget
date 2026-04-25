@@ -19,7 +19,7 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
   const [closingDate, setClosingDate] = useState(new Date().toISOString().slice(0, 10))
   
   // New Loan Part
-  const [newPrincipal, setNewPrincipal] = useState(loan.principal.toString())
+  const [newPrincipal, setNewPrincipal] = useState(remainingPrincipal.toString())
   const [newType, setNewType] = useState(loan.loan_type)
   const [newRate, setNewRate] = useState(loan.interest_rate.toString())
   const [newInstallmentAmt, setNewInstallmentAmt] = useState(loan.installment_amount?.toString() || '1000')
@@ -64,8 +64,11 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
     if (principal > 0 && instAmt > 0 && instCount > 0) {
       const totalPayback = instAmt * instCount
       const profit = totalPayback - principal
-      const rate = (profit / principal) * 100
-      setNewRate(rate.toFixed(2))
+      const totalRate = (profit / principal) * 100
+      
+      // Calculate daily rate because we save it with interest_period = 'daily'
+      const dailyRate = totalRate / instCount
+      setNewRate(dailyRate.toFixed(4)) // Use more precision for small daily rates
     }
   }
 
