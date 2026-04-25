@@ -187,9 +187,10 @@ export default function AddLoan() {
 
     if (p <= 0 || r <= 0) return null
 
-    const daysToDate = form.due_date
-      ? Math.max(1, Math.ceil((new Date(form.due_date).getTime() - new Date(start).getTime()) / 86400000))
+    const diffDays = form.due_date
+      ? Math.ceil((new Date(form.due_date).getTime() - new Date(start).getTime()) / 86400000)
       : 30
+    const daysToDate = form.include_first_day ? diffDays + 1 : diffDays
 
     const periodLabel = PERIODS.find(px => px.value === period)?.label.replace('% ต่อ', '') || 'วัน'
     const rateFormatted = `${parseFloat(form.interest_rate).toFixed(2)}%`
@@ -266,7 +267,7 @@ export default function AddLoan() {
       }
       default: return null
     }
-  }, [form.loan_type, form.principal, form.interest_rate, form.interest_period, form.start_date, form.due_date, form.installments])
+  }, [form.loan_type, form.principal, form.interest_rate, form.interest_period, form.start_date, form.due_date, form.installments, form.include_first_day, form.installment_amount])
 
   const validate = () => {
     const e: Record<string, string> = {}
