@@ -105,9 +105,6 @@ export default function AddLoan() {
     }
   }
 
-  const toggleDueMode = () => {
-    setDueMode(prev => prev === 'date' ? 'days' : 'date')
-  }
 
   const toggleInterestMode = () => {
     const newMode = interestMode === 'percent' ? 'amount' : 'percent'
