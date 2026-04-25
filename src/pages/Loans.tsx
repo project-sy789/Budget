@@ -55,10 +55,10 @@ export default function Loans() {
           </div>
           <select className="form-select" style={{ width: 160 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">ทุกสถานะ</option>
-            <option value="active">กำลังดำเนินการ</option>
-            <option value="overdue">ค้างชำระ</option>
-            <option value="closed">ปิดบัญชีแล้ว</option>
-            <option value="restructured">ปรับโครงสร้าง</option>
+            <option value="active">กำลังส่ง</option>
+            <option value="overdue">ค้างส่ง</option>
+            <option value="closed">จบยอดแล้ว</option>
+            <option value="restructured">ปรับยอด</option>
           </select>
           <select className="form-select" style={{ width: 180 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
             <option value="">ทุกประเภท</option>

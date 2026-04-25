@@ -77,10 +77,10 @@ export function loanTypeBadgeClass(type: string): string {
 
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
-    active: 'กำลังดำเนินการ',
-    closed: 'ปิดบัญชีแล้ว',
-    overdue: 'ค้างชำระ',
-    restructured: 'ปรับโครงสร้างหนี้',
+    active: 'กำลังส่ง',
+    closed: 'จบยอดแล้ว',
+    overdue: 'ค้างส่ง',
+    restructured: 'ปรับยอด',
   }
   return labels[status] || status
 }
