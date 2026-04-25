@@ -76,7 +76,7 @@ export default function Reports() {
 
   // Portfolio Stats (Outstanding Principal)
   const portfolioStats = useMemo(() => {
-    const activeLoans = loans.filter(l => l.status !== 'closed')
+    const activeLoans = loans.filter(l => l.status === 'active' || l.status === 'overdue')
     let totalOut = 0
     let overdueOut = 0
     let overdueCount = 0
