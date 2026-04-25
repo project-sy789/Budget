@@ -18,48 +18,58 @@ export default function DailyCheckin({ loan, payments }: Props) {
   const [copied, setCopied] = useState(false)
 
   const startDate = parseISO(loan.start_date)
-  const daysInMonth = getDaysInMonth(currentMonth)
+  const dueDate = parseISO(loan.due_date)
   
-  // Calculate default daily amount: Use explicitly set installment_amount if available, otherwise fallback to calculated daily interest
+  // Calculate default daily amount
   const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
   const defaultDailyAmt = loan.installment_amount || (dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0)
-
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
 
   const daysData = useMemo(() => {
     const data = []
     const today = new Date()
+    today.setHours(0, 0, 0, 0)
     
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i)
-      const dateStr = format(date, 'yyyy-MM-dd')
+    let curr = new Date(startDate)
+    curr.setHours(0, 0, 0, 0)
+    const end = new Date(dueDate)
+    end.setHours(0, 0, 0, 0)
+    
+    let lastMonth = -1
+    let count = 0
+    while (curr <= end && count < 366) {
+      const month = curr.getMonth()
+      if (month !== lastMonth) {
+        data.push({ isMonthHeader: true, label: format(curr, 'MMMM', { locale: th }), id: `m-${month}-${curr.getFullYear()}` })
+        lastMonth = month
+      }
       
+      const dateStr = format(curr, 'yyyy-MM-dd')
       const dayPayments = payments.filter(p => p.payment_date === dateStr)
-      const isBeforeStart = isBefore(date, startOfMonth(startDate)) || (isSameDay(date, startDate) ? false : isBefore(date, startDate))
-      const isFuture = isAfter(date, today) && !isSameDay(date, today)
+      const isFuture = isAfter(curr, today)
       
       let symbol = ''
       if (dayPayments.length > 0) {
         symbol = '✅'.repeat(dayPayments.length)
-      } else if (isBeforeStart) {
-        symbol = '📍'
       } else if (!isFuture) {
         symbol = '📍'
       }
 
       data.push({
-        day: i,
-        date,
+        day: curr.getDate(),
+        date: new Date(curr),
         dateStr,
         payments: dayPayments,
         symbol,
         isFuture,
-        isBeforeStart
+        isMonthHeader: false,
+        id: dateStr
       })
+      
+      curr.setDate(curr.getDate() + 1)
+      count++
     }
     return data
-  }, [currentMonth, payments, startDate, daysInMonth])
+  }, [startDate, dueDate, payments])
 
   const handleQuickPay = async (dateStr: string, hasPayments: boolean) => {
     if (hasPayments) {
@@ -90,19 +100,21 @@ export default function DailyCheckin({ loan, payments }: Props) {
   const generateReportText = () => {
     const startMonthName = format(startDate, 'MMMM', { locale: th })
     
-    let text = `🌳ต้น ${loan.principal}🌳  ${format(startDate, 'd')} ${startMonthName} พ.ศ.${startDate.getFullYear() + 543}\n`
+    let text = `🌳ต้น ${loan.principal.toLocaleString()}🌳  ${format(startDate, 'd')} ${startMonthName} พ.ศ.${startDate.getFullYear() + 543}\n\n`
     if (defaultDailyAmt > 0) {
-      text += `  🌼${defaultDailyAmt}/วัน🌼\n`
+      text += `  🌼${defaultDailyAmt.toLocaleString()}/วัน🌼\n`
     }
     text += `.........................................\n\n`
     
     daysData.forEach(d => {
-      text += `${d.day}${d.symbol}\n`
+      if (d.isMonthHeader) {
+        text += `\n${d.label}\n`
+      } else {
+        text += `${d.day}${d.symbol || ''}\n`
+      }
     })
     
-    // Add next month header if needed (optional, keeping it simple for now)
-    
-    text += `\nรวมยอด ${loan.principal} 💸\n\n`
+    text += `\nรวมยอด ${loan.principal.toLocaleString()} 💸\n\n`
     text += `🕑ส่งยอด20.30น.`
     
     return text
@@ -124,28 +136,23 @@ export default function DailyCheckin({ loan, payments }: Props) {
           </button>
         </div>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, background: 'var(--bg-secondary)', padding: '8px 16px', borderRadius: 8 }}>
-          <button onClick={handlePrevMonth} className="btn btn-secondary btn-sm btn-icon">◀</button>
-          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
-            {format(currentMonth, 'MMMM yyyy', { locale: th })}
-          </div>
-          <button onClick={handleNextMonth} className="btn btn-secondary btn-sm btn-icon">▶</button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
-          {/* We don't necessarily need a strict calendar grid, a simple list or flow is fine, 
-              but a grid looks nice. Since it's just 1-31, a wrap flex or dense grid is best. */}
-        </div>
-        
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {daysData.map(d => {
-            const isTodayDate = isToday(d.date)
+            if (d.isMonthHeader) {
+              return (
+                <div key={d.id} style={{ width: '100%', padding: '12px 0 8px', fontWeight: 700, fontSize: '1rem', borderBottom: '1px solid var(--border)', marginBottom: 8, color: 'var(--gold)' }}>
+                  {d.label}
+                </div>
+              )
+            }
+            
+            const isTodayDate = isToday(d.date!)
             const isSaving = savingDate === d.dateStr
             
             return (
               <button
-                key={d.day}
-                onClick={() => !d.isFuture && handleQuickPay(d.dateStr, d.payments.length > 0)}
+                key={d.id}
+                onClick={() => !d.isFuture && handleQuickPay(d.dateStr!, d.payments!.length > 0)}
                 disabled={d.isFuture || isSaving}
                 style={{
                   width: 'calc(14.28% - 7px)', // 7 items per row
@@ -155,7 +162,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  background: d.payments.length > 0 ? 'var(--success-bg)' : isTodayDate ? 'var(--gold-glow)' : 'var(--bg-secondary)',
+                  background: d.payments!.length > 0 ? 'var(--success-bg)' : isTodayDate ? 'var(--gold-glow)' : 'var(--bg-secondary)',
                   border: `1px solid ${isTodayDate ? 'var(--gold)' : 'var(--border)'}`,
                   borderRadius: 8,
                   cursor: d.isFuture ? 'default' : 'pointer',
@@ -177,7 +184,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
         
         <div style={{ marginTop: 16, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           <p>💡 <b>วิธีใช้:</b> กดที่วันที่เพื่อบันทึกการส่งยอด ({formatBaht(defaultDailyAmt)}) อัตโนมัติ</p>
-          <p>📍 = ไม่มีรายการ/ยังไม่ส่ง, ✅ = ส่งยอดแล้ว</p>
+          <p>📍 = รอส่ง/ว่าง, ✅ = ส่งยอดแล้ว</p>
         </div>
       </div>
       
