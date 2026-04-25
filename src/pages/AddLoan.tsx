@@ -361,7 +361,9 @@ export default function AddLoan() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">วันเริ่มกู้ <span className="required">*</span></label>
+                  <div style={{ minHeight: 34, display: 'flex', alignItems: 'flex-end', marginBottom: 8 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>วันเริ่มกู้ <span className="required">*</span></label>
+                  </div>
                   <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
                   {errors.start_date && <div className="form-error">{errors.start_date}</div>}
                 </div>
