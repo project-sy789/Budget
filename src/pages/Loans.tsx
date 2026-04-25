@@ -96,8 +96,10 @@ export default function Loans() {
               </thead>
               <tbody>
                 {filtered.map(loan => {
-                  const overdue = loan.status === 'active' && isOverdue(loan.due_date)
-                  const rowClass = overdue ? 'row-overdue' : loan.status === 'closed' ? 'row-closed' : loan.status === 'restructured' ? 'row-restructured' : ''
+                  const overdueByDate = isOverdue(loan.due_date)
+                  const isActuallyOverdue = loan.status === 'overdue' || (loan.status === 'active' && overdueByDate)
+                  const rowClass = isActuallyOverdue ? 'row-overdue' : loan.status === 'closed' ? 'row-closed' : loan.status === 'restructured' ? 'row-restructured' : ''
+                  
                   return (
                     <tr key={loan.id} className={rowClass}>
                       <td>
@@ -108,11 +110,11 @@ export default function Loans() {
                       <td className="td-amount td-gold">{formatBaht(loan.principal)}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{loan.interest_rate}% / {loan.interest_period === 'daily' ? 'วัน' : loan.interest_period === 'weekly' ? 'อาทิตย์' : loan.interest_period === 'monthly' ? 'เดือน' : 'ปี'}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{formatDate(loan.start_date)}</td>
-                      <td style={{ color: overdue ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: overdue ? 700 : 400 }}>
+                      <td style={{ color: isActuallyOverdue ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: isActuallyOverdue ? 700 : 400 }}>
                         {formatDate(loan.due_date)}
-                        {overdue && <div style={{ fontSize: '0.72rem' }}>⚠️ เกินกำหนด</div>}
+                        {isActuallyOverdue && <div style={{ fontSize: '0.72rem' }}>⚠️ ค้างชำระ</div>}
                       </td>
-                      <td><span className={`badge ${statusBadgeClass(loan.status)}`}>{statusLabel(loan.status)}</span></td>
+                      <td><span className={`badge ${isActuallyOverdue ? 'badge-danger' : statusBadgeClass(loan.status)}`}>{isActuallyOverdue ? '⚠️ ค้างชำระ' : statusLabel(loan.status)}</span></td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <Link to={`/loans/${loan.id}`} className="btn btn-secondary btn-sm" title="ดูรายละเอียด">👁️</Link>
