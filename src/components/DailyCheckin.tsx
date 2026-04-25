@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { format, startOfMonth, parseISO, isAfter, isToday } from 'date-fns'
+import { format, parseISO, isAfter, isToday } from 'date-fns'
 import { th } from 'date-fns/locale'
 import type { Loan, Payment } from '../lib/supabase'
 import { useStore } from '../store/useStore'
