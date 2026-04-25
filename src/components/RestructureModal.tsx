@@ -24,8 +24,40 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
   const [newRate, setNewRate] = useState(loan.interest_rate.toString())
   const [newInstallmentAmt, setNewInstallmentAmt] = useState(loan.installment_amount?.toString() || '1000')
   const [newInstallments, setNewInstallments] = useState(loan.installments?.toString() || '24')
+  const [newDueDate, setNewDueDate] = useState('')
   
   const [saving, setSaving] = useState(false)
+
+  // Initial Due Date calculation
+  React.useEffect(() => {
+    const startDate = new Date(closingDate)
+    const dueDate = new Date(startDate)
+    dueDate.setDate(startDate.getDate() + parseInt(newInstallments))
+    setNewDueDate(dueDate.toISOString().slice(0, 10))
+  }, [])
+
+  // Sync Installments -> Due Date
+  const handleInstallmentsChange = (count: string) => {
+    setNewInstallments(count)
+    const startDate = new Date(closingDate)
+    const dueDate = new Date(startDate)
+    const days = parseInt(count) || 0
+    dueDate.setDate(startDate.getDate() + days)
+    setNewDueDate(dueDate.toISOString().slice(0, 10))
+    calculateRateFromInstallments(newPrincipal, newInstallmentAmt, count)
+  }
+
+  // Sync Due Date -> Installments
+  const handleDueDateChange = (dateStr: string) => {
+    setNewDueDate(dateStr)
+    const startDate = new Date(closingDate)
+    const dueDate = new Date(dateStr)
+    const diffTime = dueDate.getTime() - startDate.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const days = Math.max(0, diffDays)
+    setNewInstallments(days.toString())
+    calculateRateFromInstallments(newPrincipal, newInstallmentAmt, days.toString())
+  }
 
   // Auto-calculate Rate from Installments
   const calculateRateFromInstallments = (p: string, amt: string, count: string) => {
@@ -45,16 +77,10 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
     e.preventDefault()
     setSaving(true)
 
+    // Calculate due date based on state
     const principal = parseFloat(newPrincipal) || 0
     const installments = parseInt(newInstallments) || 0
     const installmentAmt = parseFloat(newInstallmentAmt) || 0
-
-    // Calculate due date based on installments
-    const startDate = new Date(closingDate)
-    const dueDate = new Date(startDate)
-    if (newType === 'daily') dueDate.setDate(startDate.getDate() + installments)
-    if (newType === 'weekly') dueDate.setDate(startDate.getDate() + (installments * 7))
-    if (newType === 'monthly') dueDate.setMonth(startDate.getMonth() + installments)
 
     try {
       // 1. Close the current loan
@@ -84,10 +110,10 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           agent_name: loan.agent_name,
           principal: principal,
           interest_rate: parseFloat(newRate) || 0,
-          interest_period: 'daily', // Always daily for this calculation style
+          interest_period: 'daily',
           loan_type: newType as any,
           start_date: closingDate,
-          due_date: dueDate.toISOString().slice(0, 10),
+          due_date: newDueDate,
           status: 'active',
           collateral: loan.collateral,
           guarantor_name: loan.guarantor_name,
@@ -135,21 +161,22 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
               {/* Part 2: Open New Loan */}
               <div className="card-section" style={{ background: 'var(--success-bg)', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
                 <div className="section-title-main" style={{ color: 'var(--success)', marginBottom: 16 }}>🌳 2. ตั้งยอดใหม่ทันที</div>
-                <div className="form-group">
-                  <label className="form-label">เงินต้นก้อนใหม่ (บาท)</label>
-                  <input 
-                    className="form-input" 
-                    type="number" 
-                    step="0.01" 
-                    value={newPrincipal} 
-                    onChange={e => {
-                      setNewPrincipal(e.target.value)
-                      calculateRateFromInstallments(e.target.value, newInstallmentAmt, newInstallments)
-                    }} 
-                    required 
-                  />
-                </div>
+                
                 <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">เงินต้นก้อนใหม่ (บาท)</label>
+                    <input 
+                      className="form-input" 
+                      type="number" 
+                      step="0.01" 
+                      value={newPrincipal} 
+                      onChange={e => {
+                        setNewPrincipal(e.target.value)
+                        calculateRateFromInstallments(e.target.value, newInstallmentAmt, newInstallments)
+                      }} 
+                      required 
+                    />
+                  </div>
                   <div className="form-group">
                     <label className="form-label">ยอดส่ง (บาท/วัน)</label>
                     <input 
@@ -163,19 +190,29 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                       }} 
                     />
                   </div>
+                </div>
+
+                <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">จำนวนวัน (งวด)</label>
                     <input 
                       className="form-input" 
                       type="number" 
                       value={newInstallments} 
-                      onChange={e => {
-                        setNewInstallments(e.target.value)
-                        calculateRateFromInstallments(newPrincipal, newInstallmentAmt, e.target.value)
-                      }} 
+                      onChange={e => handleInstallmentsChange(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">วันครบกำหนด</label>
+                    <input 
+                      className="form-input" 
+                      type="date" 
+                      value={newDueDate} 
+                      onChange={e => handleDueDateChange(e.target.value)} 
                     />
                   </div>
                 </div>
+
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">ดอกเบี้ยคำนวณได้ (%)</label>
