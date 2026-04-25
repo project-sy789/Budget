@@ -26,6 +26,13 @@ export default function Dashboard() {
     const totalPrincipal = active.reduce((s, l) => s + l.principal, 0)
 
     const todayInterest = active.reduce((s, l) => {
+      // If it's a flat daily loan with set installments, the rate is usually the total rate for the term
+      if (l.loan_type === 'daily' && l.installments && l.installments > 0) {
+        const totalInterest = (l.principal * l.interest_rate) / 100
+        const dailyInterest = totalInterest / l.installments
+        return s + dailyInterest
+      }
+      
       const r = calcDailyFlat(l.principal, l.interest_rate, l.interest_period, 1)
       return s + r.dailyInterest
     }, 0)
