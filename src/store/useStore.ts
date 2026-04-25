@@ -13,6 +13,7 @@ interface AppState {
   deleteLoan: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
+  subscribeToAll: () => () => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -61,5 +62,36 @@ export const useStore = create<AppState>((set) => ({
   deletePayment: async (id) => {
     await supabase.from('payments').delete().eq('id', id)
     set(s => ({ payments: s.payments.filter(p => p.id !== id) }))
+  },
+
+  subscribeToAll: () => {
+    const loanSub = supabase
+      .channel('loans-realtime')
+      .on('postgres_changes', { event: '*', table: 'loans' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set(s => ({ loans: [payload.new as Loan, ...s.loans] }))
+        } else if (payload.eventType === 'UPDATE') {
+          set(s => ({ loans: s.loans.map(l => l.id === payload.new.id ? payload.new as Loan : l) }))
+        } else if (payload.eventType === 'DELETE') {
+          set(s => ({ loans: s.loans.filter(l => l.id !== payload.old.id) }))
+        }
+      })
+      .subscribe()
+
+    const paymentSub = supabase
+      .channel('payments-realtime')
+      .on('postgres_changes', { event: '*', table: 'payments' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set(s => ({ payments: [payload.new as Payment, ...s.payments] }))
+        } else if (payload.eventType === 'DELETE') {
+          set(s => ({ payments: s.payments.filter(p => p.id !== payload.old.id) }))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(loanSub)
+      supabase.removeChannel(paymentSub)
+    }
   },
 }))

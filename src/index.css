@@ -267,8 +267,8 @@ body {
 .btn-icon { padding: 8px; border-radius: var(--radius-sm); }
 
 /* ===== FORMS ===== */
-.form-group { margin-bottom: 16px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { margin-bottom: 16px; position: relative; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .form-label {
   display: block;
@@ -559,6 +559,48 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 }
 .tab:hover { color: var(--text-primary); }
 .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* Segmented Control */
+.segmented-control {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.segment-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.segment-btn.active {
+  background: var(--gold);
+  color: var(--bg-main);
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
+}
+.segment-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.form-hint-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--gold-glow);
+  color: var(--gold);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
 
 /* ===== PROGRESS BAR ===== */
 .progress-bar {

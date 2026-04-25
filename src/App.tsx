@@ -14,10 +14,14 @@ import './index.css'
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn())
-  const { loans, fetchLoans } = useStore()
+  const { loans, fetchLoans, subscribeToAll } = useStore()
 
   useEffect(() => {
-    if (authed) fetchLoans()
+    if (authed) {
+      fetchLoans()
+      const unsubscribe = subscribeToAll()
+      return () => unsubscribe()
+    }
   }, [authed])
 
   const overdueCount = loans.filter(l => {

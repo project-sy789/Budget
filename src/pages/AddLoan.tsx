@@ -54,10 +54,59 @@ export default function AddLoan() {
   const [form, setForm] = useState<FormData>(defaultForm)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [interestMode, setInterestMode] = useState<'percent' | 'amount'>('percent')
+  const [interestAmount, setInterestAmount] = useState('')
 
   const set = (key: keyof FormData, val: string) => {
-    setForm(f => ({ ...f, [key]: val }))
+    setForm(f => {
+      const newForm = { ...f, [key]: val }
+      
+      // Auto-sync interest_period when loan_type changes
+      if (key === 'loan_type') {
+        if (val === 'daily') newForm.interest_period = 'daily'
+        else if (val === 'weekly') newForm.interest_period = 'weekly'
+        else if (val === 'monthly') newForm.interest_period = 'monthly'
+        else if (val === 'reducing') newForm.interest_period = 'monthly'
+        else if (val === 'upfront') newForm.interest_period = 'daily'
+        else if (val === 'bullet') newForm.interest_period = 'daily'
+      }
+
+      // Sync interest if mode is amount and principal or rate changes
+      if (interestMode === 'amount' && (key === 'principal' || key === 'interest_rate')) {
+        const p = parseFloat(newForm.principal) || 0
+        const r = parseFloat(newForm.interest_rate) || 0
+        // If interest_rate is being set directly from the percentage input, we don't need to do anything
+        // But if principal changes while in amount mode, we need to update percentage
+      }
+      if (interestMode === 'amount' && key === 'principal') {
+        const p = parseFloat(val) || 0
+        const amt = parseFloat(interestAmount) || 0
+        if (p > 0) {
+          newForm.interest_rate = ((amt / p) * 100).toFixed(4)
+        }
+      }
+      return newForm
+    })
     setErrors(e => ({ ...e, [key]: '' }))
+  }
+
+  const handleInterestAmountChange = (val: string) => {
+    setInterestAmount(val)
+    const amt = parseFloat(val) || 0
+    const p = parseFloat(form.principal) || 0
+    if (p > 0) {
+      set('interest_rate', ((amt / p) * 100).toFixed(4))
+    }
+  }
+
+  const toggleInterestMode = () => {
+    const newMode = interestMode === 'percent' ? 'amount' : 'percent'
+    setInterestMode(newMode)
+    if (newMode === 'amount') {
+      const p = parseFloat(form.principal) || 0
+      const r = parseFloat(form.interest_rate) || 0
+      setInterestAmount(((r / 100) * p).toFixed(2))
+    }
   }
 
   // Preview calculations
@@ -251,12 +300,33 @@ export default function AddLoan() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">อัตราดอกเบี้ย <span className="required">*</span></label>
-                  <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8, minHeight: 34 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 140 }}>
+                      <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => interestMode !== 'percent' && toggleInterestMode()}>%</button>
+                      <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => interestMode !== 'amount' && toggleInterestMode()}>บาท</button>
+                    </div>
+                  </div>
+                  {interestMode === 'percent' ? (
+                    <div style={{ position: 'relative' }}>
+                      <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" style={{ paddingRight: 36 }} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
+                    </div>
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                    </div>
+                  )}
                   {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
+                  {interestMode === 'amount' && (
+                    <div className="form-hint-pill">≈ {parseFloat(form.interest_rate).toFixed(2)}% ต่อรอบ</div>
+                  )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">คิดดอก</label>
+                  <div style={{ minHeight: 34, display: 'flex', alignItems: 'flex-end', marginBottom: 8 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>ระยะเวลาคิดดอก</label>
+                  </div>
                   <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
                     {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
