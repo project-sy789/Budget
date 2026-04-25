@@ -231,6 +231,7 @@ export default function LoanDetail() {
         <PaymentModal
           loan={loan}
           accruedInterest={outstandingInterest}
+          remainingPrincipal={remaining}
           onClose={() => setShowPayModal(false)}
           onSaved={() => { setShowPayModal(false); fetchPayments(id) }}
         />

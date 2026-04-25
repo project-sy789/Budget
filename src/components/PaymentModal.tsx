@@ -6,15 +6,16 @@ import type { Loan } from '../lib/supabase'
 interface Props {
   loan: Loan
   accruedInterest: number
+  remainingPrincipal: number
   onClose: () => void
   onSaved: () => void
 }
 
-export default function PaymentModal({ loan, accruedInterest, onClose, onSaved }: Props) {
+export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved }: Props) {
   const { addPayment } = useStore()
   const [amount, setAmount] = useState('')
-  const [interestPaid, setInterestPaid] = useState(accruedInterest.toFixed(2))
-  const [principalPaid, setPrincipalPaid] = useState('')
+  const [interestPaid, setInterestPaid] = useState('0.00')
+  const [principalPaid, setPrincipalPaid] = useState('0.00')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [method, setMethod] = useState('cash')
   const [receiptNo, setReceiptNo] = useState('')
@@ -27,9 +28,13 @@ export default function PaymentModal({ loan, accruedInterest, onClose, onSaved }
   const handleAmountChange = (v: string) => {
     setAmount(v)
     const a = parseFloat(v) || 0
-    const i = Math.min(accruedInterest, a)
+    
+    // PRINCIPAL-FIRST LOGIC: Use capital recovery for safety
+    const p = Math.min(remainingPrincipal, a)
+    const i = Math.max(0, a - p)
+    
+    setPrincipalPaid(p.toFixed(2))
     setInterestPaid(i.toFixed(2))
-    setPrincipalPaid(Math.max(a - i, 0).toFixed(2))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
