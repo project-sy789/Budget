@@ -20,10 +20,9 @@ export default function DailyCheckin({ loan, payments }: Props) {
   const startDate = parseISO(loan.start_date)
   const daysInMonth = getDaysInMonth(currentMonth)
   
-  // Calculate default daily amount (Interest for 'daily' loans, or just something else)
-  // To keep it simple, we use calcDailyFlat to get daily interest.
+  // Calculate default daily amount: Use explicitly set installment_amount if available, otherwise fallback to calculated daily interest
   const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
-  const defaultDailyAmt = dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0
+  const defaultDailyAmt = loan.installment_amount || (dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0)
 
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
@@ -79,8 +78,8 @@ export default function DailyCheckin({ loan, payments }: Props) {
       loan_id: loan.id,
       payment_date: dateStr,
       amount: defaultDailyAmt,
-      interest_paid: defaultDailyAmt, // Assumes all goes to interest for daily loans
-      principal_paid: 0,
+      interest_paid: Math.min(dailyInfo.dailyInterest, defaultDailyAmt),
+      principal_paid: Math.max(defaultDailyAmt - dailyInfo.dailyInterest, 0),
       payment_method: 'cash',
       receipt_no: '',
       notes: 'Quick Check-in'

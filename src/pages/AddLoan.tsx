@@ -36,6 +36,7 @@ interface FormData {
   start_date: string
   due_date: string
   installments: string
+  installment_amount: string
   collateral: string
   guarantor_name: string
   notes: string
@@ -43,9 +44,9 @@ interface FormData {
 
 const defaultForm: FormData = {
   borrower_name: '', borrower_phone: '', borrower_address: '', borrower_id_card: '',
-  loan_type: 'daily', principal: '', interest_rate: '1', interest_period: 'daily',
-  start_date: new Date().toISOString().slice(0, 10),
-  due_date: '', installments: '4', collateral: '', guarantor_name: '', notes: '',
+  loan_type: 'daily', principal: '', interest_rate: '', interest_period: 'daily',
+  start_date: new Date().toISOString().slice(0, 10), due_date: '',
+  installments: '', installment_amount: '', collateral: '', guarantor_name: '', notes: ''
 }
 
 export default function AddLoan() {
@@ -232,7 +233,7 @@ export default function AddLoan() {
       start_date: form.start_date,
       due_date: form.due_date,
       installments: form.installments ? parseInt(form.installments) : null,
-      installment_amount: preview?.summary[0]?.value ? parseFloat(preview.summary[0].value.replace(/[^0-9.]/g, '')) : null,
+      installment_amount: form.installment_amount ? parseFloat(form.installment_amount) : null,
       collateral: form.collateral,
       guarantor_name: form.guarantor_name,
       status: 'active',
@@ -390,9 +391,15 @@ export default function AddLoan() {
                 </div>
               </div>
               {needsInstallments && (
-                <div className="form-group">
-                  <label className="form-label">จำนวนงวด</label>
-                  <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">จำนวนงวด</label>
+                    <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ยอดส่งต่องวด (บาท)</label>
+                    <input className="form-input" type="number" step="0.01" value={form.installment_amount} onChange={e => set('installment_amount', e.target.value)} placeholder="ระบบจะคำนวณให้อัตโนมัติถ้าเว้นว่าง" />
+                  </div>
                 </div>
               )}
               <div className="form-group">
