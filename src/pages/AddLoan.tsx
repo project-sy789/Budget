@@ -386,67 +386,71 @@ export default function AddLoan() {
                   <input className="form-input" value={form.collateral} onChange={e => set('collateral', e.target.value)} placeholder="โฉนด, ทะเบียนรถ, ฯลฯ" />
                 </div>
               </div>
-              <div className="form-row">
+
+              <div className="form-row" style={{ marginBottom: 20 }}>
                 <div className="form-group">
-                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 180 }}>
+                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 190 }}>
                       <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('percent')}>%</button>
                       <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('amount')}>บาท</button>
                       <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>ยอดรวม</button>
                     </div>
                   </div>
-                  {interestMode === 'percent' ? (
-                    <div style={{ position: 'relative' }}>
-                      <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" style={{ paddingRight: 36 }} />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
-                    </div>
-                  ) : interestMode === 'amount' ? (
-                    <div style={{ position: 'relative' }}>
-                      <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
-                    </div>
-                  ) : (
-                    <div style={{ position: 'relative' }}>
-                      <input id="total-repay-input" className="form-input" type="number" step="0.01" value={totalRepay} onChange={e => handleTotalRepayChange(e.target.value)} placeholder="12000" style={{ paddingRight: 36 }} />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
-                    </div>
-                  )}
+                  <div style={{ position: 'relative' }}>
+                    {interestMode === 'percent' ? (
+                      <>
+                        <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" style={{ paddingRight: 36 }} />
+                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
+                      </>
+                    ) : interestMode === 'amount' ? (
+                      <>
+                        <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
+                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                      </>
+                    ) : (
+                      <>
+                        <input id="total-repay-input" className="form-input" type="number" step="0.01" value={totalRepay} onChange={e => handleTotalRepayChange(e.target.value)} placeholder="12000" style={{ paddingRight: 36 }} />
+                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                      </>
+                    )}
+                  </div>
                   {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
                   {interestMode !== 'percent' && (
-                    <div className="form-hint-pill">
+                    <div className="form-hint-pill" style={{ marginTop: 10 }}>
                       ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
                     </div>
                   )}
                 </div>
               </div>
-              <div className="form-row">
+              <div className="form-row" style={{ marginBottom: 20 }}>
                 <div className="form-group">
-                  <div style={{ height: 36, display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>วันเริ่มกู้ <span className="required">*</span></label>
-                  </div>
-                  <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
-                  {errors.start_date && <div className="form-error">{errors.start_date}</div>}
-                </div>
-                <div className="form-group">
-                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>วันครบกำหนด <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 140 }}>
+                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>วันที่กู้/ครบกำหนด <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 170 }}>
                       <button type="button" className={`segment-btn ${dueMode === 'date' ? 'active' : ''}`} onClick={() => setDueMode('date')}>วันที่</button>
                       <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>จำนวนวัน</button>
                     </div>
                   </div>
-                  {dueMode === 'date' ? (
-                    <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
-                  ) : (
-                    <div style={{ position: 'relative' }}>
-                      <input className="form-input" type="number" value={dueDays} onChange={e => handleDueDaysChange(e.target.value)} placeholder="เช่น 30" style={{ paddingRight: 40 }} />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>วัน</span>
+                  <div className="form-row" style={{ gap: 12 }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
+                      {errors.start_date && <div className="form-error">{errors.start_date}</div>}
                     </div>
-                  )}
-                  {errors.due_date && <div className="form-error">{errors.due_date}</div>}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      {dueMode === 'date' ? (
+                        <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+                      ) : (
+                        <div style={{ position: 'relative' }}>
+                          <input className="form-input" type="number" value={dueDays} onChange={e => handleDueDaysChange(e.target.value)} placeholder="30" style={{ paddingRight: 42 }} />
+                          <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>วัน</span>
+                        </div>
+                      )}
+                      {errors.due_date && <div className="form-error">{errors.due_date}</div>}
+                    </div>
+                  </div>
                   {dueMode === 'days' && form.due_date && (
-                    <div className="form-hint-pill">📅 ครบกำหนด: {new Date(form.due_date).toLocaleDateString('th-TH')}</div>
+                    <div className="form-hint-pill" style={{ marginTop: 10 }}>📅 ครบกำหนด: {new Date(form.due_date).toLocaleDateString('th-TH')}</div>
                   )}
                 </div>
               </div>

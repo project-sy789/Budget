@@ -597,32 +597,40 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 /* Segmented Control */
 .segmented-control {
   display: flex;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--bg-secondary);
   padding: 3px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
   gap: 2px;
 }
+
 .segment-btn {
   flex: 1;
   border: none;
   background: transparent;
-  color: var(--text-muted);
   padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 18px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
 }
-.segment-btn.active {
-  background: var(--gold);
-  color: var(--bg-main);
-  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
-}
-.segment-btn:hover:not(.active) {
-  background: rgba(255,255,255,0.05);
+
+.segment-btn:hover {
   color: var(--text-primary);
+}
+
+.segment-btn.active {
+  background: var(--card-bg);
+  color: var(--gold);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+body.light-mode .segment-btn.active {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 .form-hint-pill {
