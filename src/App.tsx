@@ -10,6 +10,7 @@ import LoanDetail from './pages/LoanDetail'
 import AddLoan from './pages/AddLoan'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
+import RepairData from './pages/RepairData'
 import Sidebar from './components/Sidebar'
 import MobileNav from './components/MobileNav'
 import './index.css'
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/edit-loan/:id" element={<AddLoan />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/repair" element={<RepairData />} />
           </Routes>
         </main>
         <MobileNav />
