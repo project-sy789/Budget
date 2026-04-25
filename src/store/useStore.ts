@@ -15,6 +15,16 @@ interface AppState {
   deleteLoan: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
+  restructureLoan: (oldLoanId: string, data: {
+    closing_amount: number,
+    closing_date: string,
+    new_principal: number,
+    new_loan_type: string,
+    new_interest_rate: number,
+    new_installments: number,
+    new_installment_amount: number,
+    new_due_date: string
+  }) => Promise<void>
   subscribeToAll: () => () => void
 }
 
@@ -76,6 +86,54 @@ export const useStore = create<AppState>((set) => ({
   deletePayment: async (id) => {
     await supabase.from('payments').delete().eq('id', id)
     set(s => ({ payments: s.payments.filter(p => p.id !== id) }))
+  },
+  
+  restructureLoan: async (oldId, data) => {
+    const { loans } = useStore.getState()
+    const oldLoan = loans.find(l => l.id === oldId)
+    if (!oldLoan) return
+
+    // 1. Record closing payment for old loan
+    if (data.closing_amount > 0) {
+      await supabase.from('payments').insert([{
+        loan_id: oldId,
+        amount: data.closing_amount,
+        payment_date: data.closing_date,
+        payment_method: 'transfer',
+        notes: 'ปิดยอดเพื่อปรับโครงสร้าง/เปิดใหม่'
+      }])
+    }
+
+    // 2. Mark old loan as restructured
+    await supabase.from('loans').update({ status: 'restructured' }).eq('id', oldId)
+
+    // 3. Create new loan
+    const newLoan = {
+      borrower_name: oldLoan.borrower_name,
+      borrower_phone: oldLoan.borrower_phone,
+      borrower_address: oldLoan.borrower_address,
+      borrower_id_card: oldLoan.borrower_id_card,
+      agent_id: oldLoan.agent_id,
+      principal: data.new_principal,
+      loan_type: data.new_loan_type as any,
+      interest_rate: data.new_interest_rate,
+      interest_period: 'daily',
+      installments: data.new_installments,
+      installment_amount: data.new_installment_amount,
+      start_date: data.closing_date,
+      due_date: data.new_due_date,
+      status: 'active',
+      collateral: oldLoan.collateral,
+      guarantor_name: oldLoan.guarantor_name,
+      notes: `ปรับโครงสร้างมาจากยอดเดิม (${oldLoan.borrower_name})`
+    }
+
+    await supabase.from('loans').insert([newLoan])
+    
+    // Refresh local state
+    const { fetchLoans, fetchPayments } = useStore.getState()
+    await fetchLoans()
+    await fetchPayments()
   },
 
   subscribeToAll: () => {

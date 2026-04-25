@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
-import { Loan } from '../lib/supabase'
+import type { Loan } from '../lib/supabase'
 import { formatBaht } from '../lib/formatters'
 import { Link, useNavigate } from 'react-router-dom'
 
