@@ -55,8 +55,9 @@ export default function AddLoan() {
   const [form, setForm] = useState<FormData>(defaultForm)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [interestMode, setInterestMode] = useState<'percent' | 'amount'>('percent')
+  const [interestMode, setInterestMode] = useState<'percent' | 'amount' | 'total'>('percent')
   const [interestAmount, setInterestAmount] = useState('')
+  const [totalRepay, setTotalRepay] = useState('')
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
   const [dueDays, setDueDays] = useState('')
 
@@ -82,9 +83,37 @@ export default function AddLoan() {
           newForm.interest_rate = ((amt / p) * 100).toFixed(4)
         }
       }
+
+      // Sync interest if mode is total and principal/dates change
+      if (interestMode === 'total' && (key === 'principal' || key === 'due_date' || key === 'start_date')) {
+        setTimeout(() => syncFromTotal(newForm), 0)
+      }
+
       return newForm
     })
     setErrors(e => ({ ...e, [key]: '' }))
+  }
+
+  const syncFromTotal = (currentForm: FormData) => {
+    const total = parseFloat(totalRepay) || 0
+    const p = parseFloat(currentForm.principal) || 0
+    if (p > 0 && total > p && currentForm.start_date && currentForm.due_date) {
+      const start = new Date(currentForm.start_date)
+      const end = new Date(currentForm.due_date)
+      const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
+      
+      const totalInterest = total - p
+      let dailyAmt = 0
+      
+      // Calculate daily/weekly/monthly based on interest_period
+      if (currentForm.interest_period === 'daily') dailyAmt = totalInterest / diffDays
+      else if (currentForm.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
+      else if (currentForm.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
+      else dailyAmt = totalInterest / (diffDays / 365)
+
+      setInterestAmount(dailyAmt.toFixed(2))
+      setForm(f => ({ ...f, interest_rate: ((dailyAmt / p) * 100).toFixed(4) }))
+    }
   }
 
   const handleInterestAmountChange = (val: string) => {
@@ -96,24 +125,51 @@ export default function AddLoan() {
     }
   }
 
+  const handleTotalRepayChange = (val: string) => {
+    setTotalRepay(val)
+    const total = parseFloat(val) || 0
+    const p = parseFloat(form.principal) || 0
+    if (p > 0 && total > p && form.start_date && form.due_date) {
+      const start = new Date(form.start_date)
+      const end = new Date(form.due_date)
+      const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
+      
+      const totalInterest = total - p
+      let dailyAmt = 0
+      if (form.interest_period === 'daily') dailyAmt = totalInterest / diffDays
+      else if (form.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
+      else if (form.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
+      else dailyAmt = totalInterest / (diffDays / 365)
+
+      setInterestAmount(dailyAmt.toFixed(2))
+      setForm(f => ({ ...f, interest_rate: ((dailyAmt / p) * 100).toFixed(4) }))
+    }
+  }
+
   const handleDueDaysChange = (val: string) => {
     setDueDays(val)
     const days = parseInt(val) || 0
     if (days > 0 && form.start_date) {
       const d = new Date(form.start_date)
       d.setDate(d.getDate() + days)
-      set('due_date', d.toISOString().split('T')[0])
+      const newDueDate = d.toISOString().split('T')[0]
+      set('due_date', newDueDate)
     }
   }
 
-
-  const toggleInterestMode = () => {
-    const newMode = interestMode === 'percent' ? 'amount' : 'percent'
-    setInterestMode(newMode)
-    if (newMode === 'amount') {
-      const p = parseFloat(form.principal) || 0
-      const r = parseFloat(form.interest_rate) || 0
+  const setInterestModeWrapper = (mode: 'percent' | 'amount' | 'total') => {
+    setInterestMode(mode)
+    const p = parseFloat(form.principal) || 0
+    const r = parseFloat(form.interest_rate) || 0
+    
+    if (mode === 'amount') {
       setInterestAmount(((r / 100) * p).toFixed(2))
+    } else if (mode === 'total') {
+      if (preview?.summary) {
+        // Try to get totalRepay from current preview
+        const totalObj = preview.summary.find((s: any) => s.isTotal)
+        if (totalObj) setTotalRepay(totalObj.value.replace(/[^0-9.]/g, ''))
+      }
     }
   }
 
@@ -137,10 +193,11 @@ export default function AddLoan() {
     switch (form.loan_type) {
       case 'daily': {
         const res = calcDailyFlat(p, r, period, daysToDate)
+        const displayInstallment = form.installment_amount ? parseFloat(form.installment_amount) : res.dailyInterest
         return { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ย (${periodLabel})`, value: rateFormatted },
-          { label: `ดอกเบี้ยต่อ${periodLabel}`, value: formatBaht(res.dailyInterest) },
+          { label: `ยอดส่งต่อ${periodLabel}`, value: formatBaht(displayInstallment), isHighlight: true },
           { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
           { label: `ดอกเบี้ยรวมทั้งหมด`, value: formatBaht(res.totalInterest) },
           { label: 'ยอดรวมที่ต้องได้รับ', value: formatBaht(res.totalRepay), isTotal: true },
@@ -330,9 +387,10 @@ export default function AddLoan() {
                 <div className="form-group">
                   <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 140 }}>
-                      <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => interestMode !== 'percent' && toggleInterestMode()}>%</button>
-                      <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => interestMode !== 'amount' && toggleInterestMode()}>บาท</button>
+                    <div className="segmented-control" style={{ width: 180 }}>
+                      <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('percent')}>%</button>
+                      <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('amount')}>บาท</button>
+                      <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>ยอดรวม</button>
                     </div>
                   </div>
                   {interestMode === 'percent' ? (
@@ -340,14 +398,19 @@ export default function AddLoan() {
                       <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" style={{ paddingRight: 36 }} />
                       <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
                     </div>
-                  ) : (
+                  ) : interestMode === 'amount' ? (
                     <div style={{ position: 'relative' }}>
                       <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
                       <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
                     </div>
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <input id="total-repay-input" className="form-input" type="number" step="0.01" value={totalRepay} onChange={e => handleTotalRepayChange(e.target.value)} placeholder="12000" style={{ paddingRight: 36 }} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                    </div>
                   )}
                   {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
-                  {interestMode === 'amount' && (
+                  {interestMode !== 'percent' && (
                     <div className="form-hint-pill">
                       ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label.replace('% ', '') || 'ต่อรอบ'}
                     </div>
