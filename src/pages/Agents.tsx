@@ -11,7 +11,7 @@ export default function Agents() {
   const [checking, setChecking] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const activeLoans = useMemo(() => loans.filter(l => l.status === 'active'), [loans])
+  const activeLoans = useMemo(() => loans.filter(l => l.status === 'active' || l.status === 'overdue'), [loans])
   const agents = useMemo(() => {
     const names = [...new Set(activeLoans.map(l => l.agent_name || 'ไม่มีสายส่ง'))]
     return names.sort()
@@ -179,15 +179,14 @@ export default function Agents() {
                   <tbody>
                     {agentLoans.map((loan, idx) => {
                       const todayStr = format(new Date(), 'yyyy-MM-dd')
-                      const todayPayment = payments.find(p => p.loan_id === loan.id && p.payment_date === todayStr)
-                      const hasPaid = !!todayPayment
-
+                      const isOverdue = loan.status === 'overdue' || (new Date() > new Date(loan.due_date) && loan.status === 'active')
+                      
                       return (
-                        <tr key={loan.id} className={hasPaid ? 'row-success' : ''}>
+                        <tr key={loan.id} className={`${hasPaid ? 'row-success' : ''} ${isOverdue && !hasPaid ? 'row-overdue' : ''}`}>
                           <td style={{ width: 60 }}>{idx + 1}</td>
                           <td>
                             <Link to={`/loans/${loan.id}`} style={{ textDecoration: 'none' }}>
-                              <div style={{ fontWeight: 600, color: 'var(--gold)', cursor: 'pointer' }}>{loan.borrower_name}</div>
+                              <div style={{ fontWeight: 600, color: isOverdue && !hasPaid ? 'var(--danger)' : 'var(--gold)', cursor: 'pointer' }}>{loan.borrower_name}</div>
                             </Link>
                             <div className="td-sub">{loan.borrower_phone}</div>
                           </td>
@@ -196,6 +195,8 @@ export default function Agents() {
                           <td>
                             {hasPaid ? (
                               <span className="badge badge-success">✅ รับยอดแล้ว</span>
+                            ) : isOverdue ? (
+                              <span className="badge badge-danger">⚠️ ค้างชำระ</span>
                             ) : (
                               <span className="badge badge-warning">📍 รอโอน</span>
                             )}
