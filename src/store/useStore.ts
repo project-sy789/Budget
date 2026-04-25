@@ -83,7 +83,11 @@ export const useStore = create<AppState>((set) => ({
       .channel('loans-realtime')
       .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'loans' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
-          set(s => ({ loans: [payload.new as Loan, ...s.loans] }))
+          set(s => {
+            const exists = s.loans.some(l => l.id === payload.new.id)
+            if (exists) return s
+            return { loans: [payload.new as Loan, ...s.loans] }
+          })
         } else if (payload.eventType === 'UPDATE') {
           set(s => ({ loans: s.loans.map(l => l.id === payload.new.id ? payload.new as Loan : l) }))
         } else if (payload.eventType === 'DELETE') {
@@ -96,7 +100,11 @@ export const useStore = create<AppState>((set) => ({
       .channel('payments-realtime')
       .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'payments' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
-          set(s => ({ payments: [payload.new as Payment, ...s.payments] }))
+          set(s => {
+            const exists = s.payments.some(p => p.id === payload.new.id)
+            if (exists) return s
+            return { payments: [payload.new as Payment, ...s.payments] }
+          })
         } else if (payload.eventType === 'DELETE') {
           set(s => ({ payments: s.payments.filter(p => p.id !== payload.old.id) }))
         }
