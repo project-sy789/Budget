@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { format, parseISO, isAfter, isToday } from 'date-fns'
+import { format, parseISO, isAfter, isToday, differenceInDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import type { Loan, Payment } from '../lib/supabase'
 import { useStore } from '../store/useStore'
@@ -87,29 +87,39 @@ export default function DailyCheckin({ loan, payments }: Props) {
     let interestPaid = 0
     let principalPaid = 0
 
-    // Intelligent split based on loan type
-    if (['weekly', 'monthly', 'reducing'].includes(loan.loan_type) && loan.installments) {
-      // For installment loans, split based on total installments
-      // We need a helper to get daily rate
-      const dailyRate = (rate: number, period: string) => {
-        switch (period) {
-          case 'daily': return rate / 100
-          case 'weekly': return rate / 100 / 7
-          case 'monthly': return rate / 100 / 30
-          case 'yearly': return rate / 100 / 365
-          default: return rate / 100 / 30
-        }
+    // Intelligent split based on loan type and duration
+    const dailyRateVal = (rate: number, period: string) => {
+      switch (period) {
+        case 'daily': return rate / 100
+        case 'weekly': return rate / 100 / 7
+        case 'monthly': return rate / 100 / 30
+        case 'yearly': return rate / 100 / 365
+        default: return rate / 100 / 30
       }
+    }
+    
+    const dRate = dailyRateVal(loan.interest_rate, loan.interest_period)
+
+    if (loan.due_date && loan.start_date) {
+      // Calculate total term in days
+      const totalDays = Math.max(differenceInDays(parseISO(loan.due_date), parseISO(loan.start_date)), 1)
+      const totalInterest = loan.principal * dRate * totalDays
+      const totalRepay = loan.principal + totalInterest
       
+      // If we are paying a fixed amount, split it by the ratio of principal to total repay
+      const ratio = loan.principal / totalRepay
+      principalPaid = defaultDailyAmt * ratio
+      interestPaid = defaultDailyAmt - principalPaid
+    } else if (['weekly', 'monthly', 'reducing'].includes(loan.loan_type) && loan.installments) {
       const daysCount = loan.loan_type === 'weekly' ? loan.installments * 7 : loan.installments * 30
-      const totalInterest = loan.principal * dailyRate(loan.interest_rate, loan.interest_period) * daysCount
+      const totalInterest = loan.principal * dRate * daysCount
       const totalRepay = loan.principal + totalInterest
       const ratio = loan.principal / totalRepay
       
       principalPaid = defaultDailyAmt * ratio
       interestPaid = defaultDailyAmt - principalPaid
     } else {
-      // For daily/flat loans, cover interest first, then principal
+      // For daily/flat loans without a fixed term, cover interest first, then principal
       interestPaid = Math.min(dailyInfo.dailyInterest, defaultDailyAmt)
       principalPaid = Math.max(defaultDailyAmt - dailyInfo.dailyInterest, 0)
     }
