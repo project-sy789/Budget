@@ -53,7 +53,11 @@ export default function LoanDetail() {
   
   // Smart Accrued Interest: If we have installments, calculate based on that to avoid division artifacts
   let accruedInterest = 0
-  if (loan.installments && loan.installments > 0) {
+  if (loan.interest_period === 'daily') {
+    // For daily loans, the rate is already per day
+    const dailyInterest = (loan.principal * loan.interest_rate) / 100
+    accruedInterest = dailyInterest * daysElapsed
+  } else if (loan.installments && loan.installments > 0) {
     const totalInterest = (loan.principal * loan.interest_rate) / 100
     const interestPerInst = totalInterest / loan.installments
     accruedInterest = interestPerInst * daysElapsed
