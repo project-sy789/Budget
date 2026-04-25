@@ -54,17 +54,17 @@ export default function Agents() {
     
     // Principal-First logic
     const loanPayments = payments.filter(p => p.loan_id === loan.id)
-    const totalPaidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+    const totalPaidPrincipal = Math.round(loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0))
     const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
 
     let principalPaid = 0
     let interestPaid = 0
 
     if (remainingPrincipal > 0) {
-      principalPaid = Math.min(dailyAmt, remainingPrincipal)
-      interestPaid = Math.max(0, dailyAmt - principalPaid)
+      principalPaid = Math.round(Math.min(dailyAmt, remainingPrincipal))
+      interestPaid = Math.round(Math.max(0, dailyAmt - principalPaid))
     } else {
-      interestPaid = dailyAmt
+      interestPaid = Math.round(dailyAmt)
     }
 
     await addPayment({

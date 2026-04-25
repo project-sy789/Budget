@@ -16,27 +16,27 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
   const { addPayment, updateLoan } = useStore()
   const initialAmt = isClosing ? (remainingPrincipal + accruedInterest) : ''
   const [amount, setAmount] = useState(initialAmt.toString())
-  const [interestPaid, setInterestPaid] = useState(isClosing ? accruedInterest.toFixed(2) : '0.00')
-  const [principalPaid, setPrincipalPaid] = useState(isClosing ? remainingPrincipal.toFixed(2) : '0.00')
+  const [interestPaid, setInterestPaid] = useState(isClosing ? Math.round(accruedInterest).toString() : '0')
+  const [principalPaid, setPrincipalPaid] = useState(isClosing ? Math.round(remainingPrincipal).toString() : '0')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [method, setMethod] = useState('cash')
   const [receiptNo, setReceiptNo] = useState('')
   const [notes, setNotes] = useState(isClosing ? 'ปิดยอดก่อนกำหนด' : '')
   const [saving, setSaving] = useState(false)
 
-  const amt = parseFloat(amount) || 0
-  const interest = parseFloat(interestPaid) || 0
+  const amt = Math.round(parseFloat(amount) || 0)
+  const interest = Math.round(parseFloat(interestPaid) || 0)
 
   const handleAmountChange = (v: string) => {
     setAmount(v)
-    const a = parseFloat(v) || 0
+    const a = Math.round(parseFloat(v) || 0)
     
     // PRINCIPAL-FIRST LOGIC: Use capital recovery for safety
-    const p = Math.min(remainingPrincipal, a)
+    const p = Math.round(Math.min(remainingPrincipal, a))
     const i = Math.max(0, a - p)
     
-    setPrincipalPaid(p.toFixed(2))
-    setInterestPaid(i.toFixed(2))
+    setPrincipalPaid(p.toString())
+    setInterestPaid(i.toString())
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
