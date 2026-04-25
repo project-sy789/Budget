@@ -388,13 +388,14 @@ export default function AddLoan() {
               </div>
 
               <div className="form-row" style={{ marginBottom: 20 }}>
-                <div className="form-group">
+                {/* Interest Rate Column */}
+                <div className="form-group" style={{ flex: 1 }}>
                   <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 190 }}>
+                    <div className="segmented-control" style={{ width: 170 }}>
                       <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('percent')}>%</button>
                       <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('amount')}>บาท</button>
-                      <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>ยอดรวม</button>
+                      <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>รวม</button>
                     </div>
                   </div>
                   <div style={{ position: 'relative' }}>
@@ -422,33 +423,32 @@ export default function AddLoan() {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="form-row" style={{ marginBottom: 20 }}>
-                <div className="form-group">
+
+                {/* Dates Column */}
+                <div className="form-group" style={{ flex: 1.2 }}>
                   <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>วันที่กู้/ครบกำหนด <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 170 }}>
+                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>วันที่กู้ / ครบกำหนด <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 150 }}>
                       <button type="button" className={`segment-btn ${dueMode === 'date' ? 'active' : ''}`} onClick={() => setDueMode('date')}>วันที่</button>
-                      <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>จำนวนวัน</button>
+                      <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>วัน</button>
                     </div>
                   </div>
-                  <div className="form-row" style={{ gap: 12 }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="form-row" style={{ gap: 8 }}>
+                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                       <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
-                      {errors.start_date && <div className="form-error">{errors.start_date}</div>}
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                       {dueMode === 'date' ? (
                         <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
                       ) : (
                         <div style={{ position: 'relative' }}>
-                          <input className="form-input" type="number" value={dueDays} onChange={e => handleDueDaysChange(e.target.value)} placeholder="30" style={{ paddingRight: 42 }} />
-                          <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>วัน</span>
+                          <input className="form-input" type="number" value={dueDays} onChange={e => handleDueDaysChange(e.target.value)} placeholder="30" style={{ paddingRight: 40 }} />
+                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>วัน</span>
                         </div>
                       )}
-                      {errors.due_date && <div className="form-error">{errors.due_date}</div>}
                     </div>
                   </div>
+                  {errors.due_date && <div className="form-error">{errors.due_date}</div>}
                   {dueMode === 'days' && form.due_date && (
                     <div className="form-hint-pill" style={{ marginTop: 10 }}>📅 ครบกำหนด: {new Date(form.due_date).toLocaleDateString('th-TH')}</div>
                   )}
