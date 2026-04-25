@@ -30,7 +30,6 @@ export default function RepairData() {
         // 2. Fetch all payments for this loan
         const { data: payments, error: payErr } = await supabase
           .from('payments')
-          .withConverter(null) // ensure we get raw data
           .select('*')
           .eq('loan_id', loan.id)
           .order('payment_date', { ascending: true })
