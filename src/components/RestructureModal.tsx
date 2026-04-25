@@ -66,7 +66,6 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           status: 'active',
           collateral: loan.collateral,
           guarantor_name: loan.guarantor_name,
-          guarantor_phone: loan.guarantor_phone,
           include_first_day: true
         })
       }
