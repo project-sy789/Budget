@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { format, getDaysInMonth, startOfMonth, parseISO, isBefore, isAfter, isSameDay, addMonths, subMonths, isToday } from 'date-fns'
+import { format, startOfMonth, parseISO, isAfter, isToday } from 'date-fns'
 import { th } from 'date-fns/locale'
 import type { Loan, Payment } from '../lib/supabase'
 import { useStore } from '../store/useStore'
@@ -13,7 +13,6 @@ interface Props {
 
 export default function DailyCheckin({ loan, payments }: Props) {
   const { addPayment } = useStore()
-  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()))
   const [savingDate, setSavingDate] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
