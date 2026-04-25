@@ -377,26 +377,27 @@ export default function AddLoan() {
             </div>
 
             {/* Loan Details Section */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="section-title">รายละเอียดสินเชื่อ</div>
-              <div className="form-row">
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="section-title">📊 รายละเอียดสินเชื่อ</div>
+              
+              <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">เงินต้น (บาท) <span className="required">*</span></label>
-                  <input id="principal-input" className="form-input" type="number" value={form.principal} onChange={e => set('principal', e.target.value)} placeholder="10000" min="1" />
+                  <input id="principal-input" className="form-input" placeholder="10000" min="1" type="number" value={form.principal} onChange={e => set('principal', e.target.value)} />
                   {errors.principal && <div className="form-error">{errors.principal}</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">หลักประกัน</label>
-                  <input className="form-input" value={form.collateral} onChange={e => set('collateral', e.target.value)} placeholder="โฉนด, ทะเบียนรถ, ฯลฯ" />
+                  <input className="form-input" placeholder="โฉนด, ทะเบียนรถ, ฯลฯ" value={form.collateral} onChange={e => set('collateral', e.target.value)} />
                 </div>
               </div>
 
-              <div className="form-row responsive-row" style={{ marginBottom: 20 }}>
-                {/* Interest Rate Column */}
-                <div className="form-group" style={{ flex: 1 }}>
-                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 170 }}>
+              <div className="form-grid-2" style={{ marginTop: 20 }}>
+                {/* Interest Section */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 160 }}>
                       <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('percent')}>%</button>
                       <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('amount')}>บาท</button>
                       <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>รวม</button>
@@ -405,7 +406,7 @@ export default function AddLoan() {
                   <div style={{ position: 'relative' }}>
                     {interestMode === 'percent' ? (
                       <>
-                        <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" style={{ paddingRight: 36 }} />
+                        <input id="rate-input" className="form-input" step="0.01" placeholder="1" type="number" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} style={{ paddingRight: 36 }} />
                         <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
                       </>
                     ) : interestMode === 'amount' ? (
@@ -420,28 +421,28 @@ export default function AddLoan() {
                       </>
                     )}
                   </div>
-                  {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
                   {interestMode !== 'percent' && (
-                    <div className="form-hint-pill" style={{ marginTop: 10 }}>
+                    <div className="form-hint-pill" style={{ marginTop: 8 }}>
                       ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
                     </div>
                   )}
                 </div>
 
-                {/* Dates Column */}
-                <div className="form-group" style={{ flex: 1.2 }}>
-                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <label className="form-label" style={{ marginBottom: 0, opacity: 0.9 }}>วันที่กู้ / ครบกำหนด <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 150 }}>
+                {/* Dates Section */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>วันที่กู้ / ครบกำหนด <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 140 }}>
                       <button type="button" className={`segment-btn ${dueMode === 'date' ? 'active' : ''}`} onClick={() => setDueMode('date')}>วันที่</button>
                       <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>วัน</button>
                     </div>
                   </div>
-                  <div className="form-row stack-on-ipad">
-                    <div className="form-group">
+                  
+                  <div className="form-row stack-on-ipad" style={{ gap: 8 }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       {dueMode === 'date' ? (
                         <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
                       ) : (

@@ -694,6 +694,19 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 .fade-in {
   animation: fadeIn 0.4s ease-out;
 }
