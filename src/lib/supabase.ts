@@ -16,7 +16,7 @@ export interface Loan {
   borrower_phone: string
   borrower_address: string
   borrower_id_card: string
-  loan_type: 'daily' | 'weekly' | 'monthly' | 'upfront' | 'bullet' | 'reducing'
+  loan_type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'upfront' | 'bullet' | 'reducing'
   principal: number
   interest_rate: number
   interest_period: 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -24,6 +24,7 @@ export interface Loan {
   due_date: string
   installments: number | null
   installment_amount: number | null
+  include_first_day: boolean
   collateral: string
   guarantor_name: string
   status: 'active' | 'closed' | 'overdue' | 'restructured'

@@ -41,13 +41,15 @@ interface FormData {
   collateral: string
   guarantor_name: string
   notes: string
+  include_first_day: boolean
 }
 
 const defaultForm: FormData = {
   borrower_name: '', borrower_phone: '', borrower_address: '', borrower_id_card: '',
   loan_type: 'daily', principal: '', interest_rate: '', interest_period: 'daily',
   start_date: new Date().toISOString().slice(0, 10), due_date: '',
-  installments: '', installment_amount: '', collateral: '', guarantor_name: '', notes: ''
+  installments: '', installment_amount: '', collateral: '', guarantor_name: '', notes: '',
+  include_first_day: true
 }
 
 export default function AddLoan() {
@@ -294,6 +296,7 @@ export default function AddLoan() {
       due_date: form.due_date,
       installments: form.installments ? parseInt(form.installments) : null,
       installment_amount: form.installment_amount ? parseFloat(form.installment_amount) : null,
+      include_first_day: form.include_first_day,
       collateral: form.collateral,
       guarantor_name: form.guarantor_name,
       status: 'active',
@@ -449,6 +452,12 @@ export default function AddLoan() {
                     </div>
                   </div>
                   {errors.due_date && <div className="form-error">{errors.due_date}</div>}
+                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label className="switch-container" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }}>
+                      <input type="checkbox" checked={form.include_first_day} onChange={e => set('include_first_day', e.target.checked)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>นับวันแรกเป็นวันที่ 1</span>
+                    </label>
+                  </div>
                   {dueMode === 'days' && form.due_date && (
                     <div className="form-hint-pill" style={{ marginTop: 10 }}>📅 ครบกำหนด: {new Date(form.due_date).toLocaleDateString('th-TH')}</div>
                   )}
