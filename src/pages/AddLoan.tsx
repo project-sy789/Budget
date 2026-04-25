@@ -64,7 +64,7 @@ export default function AddLoan() {
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
   const [dueDays, setDueDays] = useState('')
 
-  const set = (key: keyof FormData, val: string) => {
+  const set = (key: keyof FormData, val: string | boolean) => {
     setForm(f => {
       const newForm = { ...f, [key]: val }
       
