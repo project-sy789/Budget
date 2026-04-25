@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useStore } from '../store/useStore'
 import { formatBaht } from '../lib/formatters'
+import { Link } from 'react-router-dom'
 import { format, isToday, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 
@@ -185,7 +186,9 @@ export default function AgentDashboard() {
                         <tr key={loan.id} className={hasPaid ? 'row-success' : ''}>
                           <td style={{ width: 60 }}>{idx + 1}</td>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{loan.borrower_name}</div>
+                            <Link to={`/loans/${loan.id}`} style={{ textDecoration: 'none' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--gold)', cursor: 'pointer' }}>{loan.borrower_name}</div>
+                            </Link>
                             <div className="td-sub">{loan.borrower_phone}</div>
                           </td>
                           <td>{formatBaht(loan.principal)}</td>
@@ -197,19 +200,24 @@ export default function AgentDashboard() {
                               <span className="badge badge-warning">📍 รอโอน</span>
                             )}
                           </td>
-                          <td style={{ width: 140 }}>
-                            {!hasPaid && (
-                              <button 
-                                className="btn btn-primary btn-sm btn-full"
-                                onClick={() => handleQuickPay(loan)}
-                                disabled={checking === loan.id}
-                              >
-                                {checking === loan.id ? <span className="spinner" /> : '✅ ตรวจยอด'}
-                              </button>
-                            )}
-                            {hasPaid && (
-                              <button className="btn btn-secondary btn-sm btn-full" disabled>สำเร็จ</button>
-                            )}
+                          <td style={{ width: 160 }}>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {!hasPaid ? (
+                                <button 
+                                  className="btn btn-primary btn-sm"
+                                  style={{ flex: 1 }}
+                                  onClick={() => handleQuickPay(loan)}
+                                  disabled={checking === loan.id}
+                                >
+                                  {checking === loan.id ? <span className="spinner" /> : '✅ ตรวจ'}
+                                </button>
+                              ) : (
+                                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled>สำเร็จ</button>
+                              )}
+                              <Link to={`/loans/${loan.id}?close=true`} className="btn btn-success btn-sm" title="ปิดบัญชี">
+                                🏁
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       )

@@ -21,6 +21,13 @@ export default function LoanDetail() {
   useEffect(() => {
     if (loans.length === 0) fetchLoans()
     fetchPayments(id)
+    
+    // Check if we should auto-open the close modal
+    const params = new URLSearchParams(window.location.hash.split('?')[1])
+    if (params.get('close') === 'true') {
+      setIsClosing(true)
+      setShowPayModal(true)
+    }
   }, [id])
 
   if (!loan) return (
