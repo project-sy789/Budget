@@ -99,22 +99,31 @@ export default function Loans() {
                 {filtered.map(loan => {
                   const overdueByDate = isOverdue(loan.due_date)
                   
+                  // Calculate paid principal for this loan
+                  const loanPayments = payments.filter(p => p.loan_id === loan.id)
+                  const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+                  const isPrincipalPaid = paidPrincipal >= loan.principal && loan.principal > 0
+
                   // Check if missed daily payment yesterday
                   let missedYesterday = false
-                  if (loan.status === 'active' && loan.loan_type === 'daily') {
+                  if (loan.status === 'active' && loan.loan_type === 'daily' && !isPrincipalPaid) {
                     const yesterday = new Date()
                     yesterday.setDate(yesterday.getDate() - 1)
                     const yesterdayStr = yesterday.toISOString().slice(0, 10)
                     
-                    // If start_date is older than yesterday, we expect a payment
                     if (loan.start_date <= yesterdayStr) {
-                      const hasPaidYesterday = payments.some(p => p.loan_id === loan.id && p.payment_date === yesterdayStr)
+                      const hasPaidYesterday = loanPayments.some(p => p.payment_date === yesterdayStr)
                       if (!hasPaidYesterday) missedYesterday = true
                     }
                   }
 
                   const isActuallyOverdue = loan.status === 'overdue' || (loan.status === 'active' && (overdueByDate || missedYesterday))
-                  const rowClass = isActuallyOverdue ? 'row-overdue' : loan.status === 'closed' ? 'row-closed' : loan.status === 'restructured' ? 'row-restructured' : ''
+                  
+                  const rowClass = isActuallyOverdue ? 'row-overdue' 
+                    : loan.status === 'closed' ? 'row-closed' 
+                    : loan.status === 'restructured' ? 'row-restructured' 
+                    : isPrincipalPaid ? 'row-success'
+                    : ''
                   
                   return (
                     <tr key={loan.id} className={rowClass}>
@@ -130,7 +139,11 @@ export default function Loans() {
                         {formatDate(loan.due_date)}
                         {isActuallyOverdue && <div style={{ fontSize: '0.72rem' }}>⚠️ ค้างชำระ</div>}
                       </td>
-                      <td><span className={`badge ${isActuallyOverdue ? 'badge-danger' : statusBadgeClass(loan.status)}`}>{isActuallyOverdue ? '⚠️ ค้างชำระ' : statusLabel(loan.status)}</span></td>
+                      <td>
+                        <span className={`badge ${isActuallyOverdue ? 'badge-danger' : isPrincipalPaid ? 'badge-success' : statusBadgeClass(loan.status)}`}>
+                          {isActuallyOverdue ? '⚠️ ค้างชำระ' : isPrincipalPaid ? '✅ คืนต้นแล้ว' : statusLabel(loan.status)}
+                        </span>
+                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <Link to={`/loans/${loan.id}`} className="btn btn-secondary btn-sm" title="ดูรายละเอียด">👁️</Link>
