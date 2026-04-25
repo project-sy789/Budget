@@ -42,16 +42,26 @@ export default function LoanDetail() {
     </div>
   )
 
-  const paidPrincipal = Math.round(loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0))
-  const paidInterest = Math.round(loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0))
-  const remaining = Math.round(calcRemainingBalance(loan.principal, paidPrincipal))
+  const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+  const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+  const remaining = calcRemainingBalance(loan.principal, paidPrincipal)
   const daysElapsed = differenceInDays(new Date(), parseISO(loan.start_date))
   const progressPct = Math.min((paidPrincipal / loan.principal) * 100, 100)
   const overdue = loan.status === 'active' && isOverdue(loan.due_date)
-
+ 
   const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, daysElapsed)
-  const accruedInterest = Math.round(dailyInfo.totalInterest)
-  const outstandingInterest = Math.max(Math.round(accruedInterest - paidInterest), 0)
+  
+  // Smart Accrued Interest: If we have installments, calculate based on that to avoid division artifacts
+  let accruedInterest = 0
+  if (loan.installments && loan.installments > 0) {
+    const totalInterest = (loan.principal * loan.interest_rate) / 100
+    const interestPerInst = totalInterest / loan.installments
+    accruedInterest = interestPerInst * daysElapsed
+  } else {
+    accruedInterest = dailyInfo.totalInterest
+  }
+
+  const outstandingInterest = Math.max(accruedInterest - paidInterest, 0)
 
   const handleStatusChange = async (status: string) => {
     await updateLoan(loan.id, { status: status as any })
