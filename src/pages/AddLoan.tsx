@@ -312,40 +312,32 @@ export default function AddLoan() {
     <div className="fade-in">
       <div className="page-header">
         <h2>➕ เพิ่มสินเชื่อใหม่</h2>
-        <p>กรอกข้อมูลการปล่อยกู้</p>
+        <p>สร้างบันทึกการปล่อยกู้ใหม่ในระบบ</p>
       </div>
+
       <div className="page-content">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24 }}>
-          {/* Form */}
+        <div className="add-loan-grid">
+          {/* Main Form Section */}
           <form onSubmit={handleSubmit}>
-            {/* Loan Type */}
+            {/* Loan Type Section */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="section-title">ประเภทการปล่อยกู้</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="loan-type-grid">
                 {LOAN_TYPES.map(t => (
                   <button
                     key={t.value}
                     type="button"
                     onClick={() => set('loan_type', t.value)}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: `1px solid ${form.loan_type === t.value ? 'var(--gold)' : 'var(--border)'}`,
-                      background: form.loan_type === t.value ? 'var(--gold-glow)' : 'var(--bg-input)',
-                      color: form.loan_type === t.value ? 'var(--gold)' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s',
-                    }}
+                    className={`loan-type-btn ${form.loan_type === t.value ? 'active' : ''}`}
                   >
-                    <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{t.label}</div>
-                    <div style={{ fontSize: '0.72rem', marginTop: 2, opacity: 0.8 }}>{t.desc}</div>
+                    <span className="label">{t.label}</span>
+                    <span className="desc">{t.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Borrower */}
+            {/* Borrower Section */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="section-title">ข้อมูลผู้กู้</div>
               <div className="form-row">
@@ -371,11 +363,11 @@ export default function AddLoan() {
               </div>
               <div className="form-group">
                 <label className="form-label">ที่อยู่</label>
-                <textarea className="form-textarea" value={form.borrower_address} onChange={e => set('borrower_address', e.target.value)} placeholder="ที่อยู่ผู้กู้" style={{ minHeight: 60 }} />
+                <textarea className="form-input" value={form.borrower_address} onChange={e => set('borrower_address', e.target.value)} placeholder="ที่อยู่ผู้กู้" style={{ minHeight: 60 }} />
               </div>
             </div>
 
-            {/* Loan Details */}
+            {/* Loan Details Section */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="section-title">รายละเอียดสินเชื่อ</div>
               <div className="form-row">
@@ -390,7 +382,7 @@ export default function AddLoan() {
                 </div>
               </div>
 
-              <div className="form-row" style={{ marginBottom: 20 }}>
+              <div className="form-row responsive-row" style={{ marginBottom: 20 }}>
                 {/* Interest Rate Column */}
                 <div className="form-group" style={{ flex: 1 }}>
                   <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -463,77 +455,76 @@ export default function AddLoan() {
                   )}
                 </div>
               </div>
-              {needsInstallments && (
-                <div className="form-row">
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">ระยะเวลาคิดดอก</label>
+                  <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
+                    {PERIODS.map(p => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {needsInstallments && (
                   <div className="form-group">
                     <label className="form-label">จำนวนงวด</label>
                     <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">ยอดส่งต่องวด (บาท)</label>
-                    <input className="form-input" type="number" step="0.01" value={form.installment_amount} onChange={e => set('installment_amount', e.target.value)} placeholder="ระบบจะคำนวณให้อัตโนมัติถ้าเว้นว่าง" />
-                  </div>
-                </div>
-              )}
-              <div className="form-group">
+                )}
+              </div>
+              
+              <div className="form-group" style={{ marginTop: 16 }}>
                 <label className="form-label">หมายเหตุ</label>
-                <textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 60 }} />
+                <textarea className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 60 }} />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" disabled={saving}>
-                {saving ? <><span className="spinner" /> กำลังบันทึก...</> : '💾 บันทึกสินเชื่อ'}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={saving}>
+                {saving ? '⏳ กำลังบันทึก...' : '💾 บันทึกสินเชื่อ'}
               </button>
               <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate('/loans')}>ยกเลิก</button>
             </div>
           </form>
 
-          {/* Preview Panel */}
-          <div>
-            <div className="card" style={{ position: 'sticky', top: 20 }}>
+          {/* Preview Panel Section */}
+          <div className="summary-sidebar">
+            <div className="card sticky-summary">
               <div className="section-title">📊 ตัวอย่างการคำนวณ</div>
               {!preview ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '40px 20px' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 12 }}>📊</div>
                   กรอกข้อมูลเงินต้นและดอกเบี้ย<br />เพื่อดูตัวอย่าง
                 </div>
               ) : (
                 <>
-                  {preview.summary.map((s: any, i) => (
-                    <div key={i} className={s.isTotal ? 'receipt-total' : 'receipt-row'} style={s.isHighlight ? { borderLeft: '3px solid var(--gold)', paddingLeft: 10, background: 'var(--gold-glow)', margin: '4px -10px', borderRadius: '0 4px 4px 0' } : {}}>
-                      <span style={{ color: s.isTotal || s.isHighlight ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.label}</span>
-                      <span style={{ fontWeight: 700, color: s.isTotal ? 'var(--gold)' : 'var(--text-primary)' }}>{s.value}</span>
-                    </div>
-                  ))}
-                  {preview.rows && preview.rows.length > 0 && (
-                    <>
-                      <div className="divider" />
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>ตารางผ่อนชำระ</div>
-                      <div className="amort-table-wrap">
-                        <table style={{ fontSize: '0.78rem' }}>
-                          <thead>
-                            <tr>
-                              <th>งวด</th>
-                              <th>วันที่</th>
-                              <th>ดอก</th>
-                              <th>ต้น</th>
-                              <th>คงเหลือ</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {preview.rows.slice(0, 24).map((r: AmortRow) => (
-                              <tr key={r.period}>
-                                <td>{r.period}</td>
-                                <td>{r.date.slice(5)}</td>
-                                <td style={{ color: 'var(--gold)' }}>{r.interest.toLocaleString()}</td>
-                                <td>{r.principal.toLocaleString()}</td>
-                                <td style={{ color: 'var(--text-muted)' }}>{r.balance.toLocaleString()}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {preview.summary.map((s: any, i: number) => (
+                      <div key={i} className={`receipt-row ${s.isTotal ? 'total-row' : ''} ${s.isHighlight ? 'highlight-row' : ''}`}>
+                        <span className="label" style={{ color: s.isTotal ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.label}</span>
+                        <span className="value" style={{ fontWeight: 700, color: s.isTotal ? 'var(--gold)' : 'var(--text-primary)' }}>{s.value}</span>
                       </div>
-                    </>
+                    ))}
+                  </div>
+
+                  {preview.rows && preview.rows.length > 0 && (
+                    <div style={{ marginTop: 24 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12 }}>ตารางผ่อนชำระ</div>
+                      <div className="amort-table-mini">
+                        {preview.rows.slice(0, 5).map((row: AmortRow, i: number) => (
+                          <div key={i} className="amort-row-mini">
+                            <span className="no">{row.period}</span>
+                            <span className="date">{new Date(row.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</span>
+                            <span className="amt">{formatBaht(row.payment)}</span>
+                          </div>
+                        ))}
+                        {preview.rows.length > 5 && (
+                          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                            ... และอีก {preview.rows.length - 5} งวด ...
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </>
               )}

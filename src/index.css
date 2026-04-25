@@ -565,7 +565,6 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.info-item { }
 .info-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
 .info-value { font-size: 0.95rem; color: var(--text-primary); font-weight: 600; margin-top: 2px; }
 
@@ -597,41 +596,188 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 /* Segmented Control */
 .segmented-control {
   display: flex;
-  background: var(--bg-secondary);
-  padding: 3px;
-  border-radius: 20px;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  gap: 2px;
 }
 
 .segment-btn {
   flex: 1;
+  padding: 6px 12px;
+  border-radius: 8px;
   border: none;
   background: transparent;
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-radius: 18px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.segment-btn:hover {
-  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .segment-btn.active {
   background: var(--card-bg);
   color: var(--gold);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-body.light-mode .segment-btn.active {
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+.segment-btn:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
+
+/* Loan Type Grid */
+.loan-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.loan-type-btn {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loan-type-btn:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.loan-type-btn.active {
+  background: var(--gold-glow);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.1);
+}
+
+.loan-type-btn .label {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.loan-type-btn .desc {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* Add Loan Grid */
+.add-loan-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+.summary-sidebar {
+  position: sticky;
+  top: 24px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .add-loan-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-sidebar {
+    position: static;
+    order: 2;
+  }
+
+  .responsive-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .responsive-row .form-group {
+    flex: none !important;
+    width: 100%;
+  }
+
+  .sticky-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-nav {
+    padding: 0 16px;
+  }
+  
+  .nav-links {
+    display: none;
+  }
+  
+  .page-content {
+    padding: 16px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Summary Styles */
+.sticky-summary {
+  position: sticky;
+  top: 24px;
+}
+
+.highlight-row {
+  background: var(--gold-glow);
+  border-left: 3px solid var(--gold);
+  padding: 10px;
+  border-radius: 0 8px 8px 0;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+.amort-table-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.amort-row-mini {
+  display: grid;
+  grid-template-columns: 30px 1fr 100px;
+  font-size: 0.8rem;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.amort-row-mini .no { color: var(--text-muted); }
+.amort-row-mini .date { color: var(--text-primary); }
+.amort-row-mini .amt { text-align: right; font-weight: 600; color: var(--gold); }
 
 .form-hint-pill {
   display: inline-block;
