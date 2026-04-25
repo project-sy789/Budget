@@ -5,13 +5,14 @@ import { formatBaht, formatDate, isOverdue, loanTypeLabel, loanTypeBadgeClass, s
 import { calcDailyFlat, calcRemainingBalance } from '../lib/calculations'
 import { differenceInDays, parseISO } from 'date-fns'
 import PaymentModal from '../components/PaymentModal'
+import DailyCheckin from '../components/DailyCheckin'
 
 export default function LoanDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { loans, payments, fetchLoans, fetchPayments, updateLoan, deletePayment } = useStore()
   const [showPayModal, setShowPayModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'info' | 'payments' | 'calc'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'payments' | 'checkin' | 'calc'>('checkin')
 
   const loan = useMemo(() => loans.find(l => l.id === id), [loans, id])
   const loanPayments = useMemo(() => payments.filter(p => p.loan_id === id).sort((a, b) => b.payment_date.localeCompare(a.payment_date)), [payments, id])
@@ -122,12 +123,16 @@ export default function LoanDetail() {
 
         {/* Tabs */}
         <div className="tabs">
-          {(['info', 'payments', 'calc'] as const).map(tab => (
+          {(['checkin', 'info', 'payments', 'calc'] as const).map(tab => (
             <button key={tab} className={`tab${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'info' ? '📋 ข้อมูล' : tab === 'payments' ? `💳 การชำระ (${loanPayments.length})` : '🧮 คำนวณ'}
+              {tab === 'checkin' ? '📅 เช็คยอดรายวัน' : tab === 'info' ? '📋 ข้อมูล' : tab === 'payments' ? `💳 การชำระ (${loanPayments.length})` : '🧮 คำนวณ'}
             </button>
           ))}
         </div>
+
+        {activeTab === 'checkin' && (
+          <DailyCheckin loan={loan} payments={loanPayments} />
+        )}
 
         {activeTab === 'info' && (
           <div className="card fade-in">
