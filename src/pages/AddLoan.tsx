@@ -466,18 +466,16 @@ export default function AddLoan() {
                 </div>
               </div>
 
-              <div className="form-row">
-                {needsInstallments && (
-                  <div className="form-group">
-                    <label className="form-label">จำนวนงวด</label>
-                    <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="form-group" style={{ marginTop: 16 }}>
+              {needsInstallments && (
+                <div className="form-group" style={{ marginTop: 20 }}>
+                  <label className="form-label">จำนวนงวด</label>
+                  <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginTop: 20 }}>
                 <label className="form-label">หมายเหตุ</label>
-                <textarea className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 60 }} />
+                <textarea className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 80 }} />
               </div>
             </div>
 
