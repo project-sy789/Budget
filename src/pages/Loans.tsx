@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore'
 import { formatBaht, formatDate, isOverdue, loanTypeLabel, loanTypeBadgeClass, statusBadgeClass, statusLabel } from '../lib/formatters'
 
 export default function Loans() {
-  const { loans, fetchLoans, deleteLoan } = useStore()
+  const { loans, payments, fetchLoans, fetchPayments, deleteLoan } = useStore()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -12,6 +12,7 @@ export default function Loans() {
 
   useEffect(() => {
     fetchLoans()
+    fetchPayments()
     const s = searchParams.get('status')
     if (s) setFilterStatus(s)
   }, [])
