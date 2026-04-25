@@ -109,6 +109,11 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
                 autoFocus
                 required
               />
+              {!isClosing && (
+                <div className="form-hint" style={{ color: 'var(--success)', fontWeight: 500, marginTop: 4 }}>
+                  ✨ ระบบจะนำไปหัก "เงินต้น" ให้ก่อนจนกว่าจะหมด
+                </div>
+              )}
             </div>
             <div className="form-row stack-on-ipad">
               <div className="form-group">
