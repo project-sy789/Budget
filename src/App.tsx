@@ -50,6 +50,7 @@ export default function App() {
             <Route path="/loans" element={<Loans />} />
             <Route path="/loans/:id" element={<LoanDetail />} />
             <Route path="/add-loan" element={<AddLoan />} />
+            <Route path="/edit-loan/:id" element={<AddLoan />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/reports" element={<Reports />} />
           </Routes>

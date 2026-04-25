@@ -114,7 +114,8 @@ export default function Loans() {
                       <td><span className={`badge ${statusBadgeClass(loan.status)}`}>{statusLabel(loan.status)}</span></td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <Link to={`/loans/${loan.id}`} className="btn btn-secondary btn-sm">รายละเอียด</Link>
+                          <Link to={`/loans/${loan.id}`} className="btn btn-secondary btn-sm" title="ดูรายละเอียด">👁️</Link>
+                          <Link to={`/edit-loan/${loan.id}`} className="btn btn-secondary btn-sm btn-icon" title="แก้ไข">✏️</Link>
                           <button onClick={() => handleDelete(loan.id, loan.borrower_name)} className="btn btn-danger btn-sm btn-icon" title="ลบ">🗑️</button>
                         </div>
                       </td>

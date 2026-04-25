@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
   calcDailyFlat, calcUpfront, calcBullet,
@@ -54,7 +54,8 @@ const defaultForm: FormData = {
 
 export default function AddLoan() {
   const navigate = useNavigate()
-  const { addLoan } = useStore()
+  const { id } = useParams()
+  const { addLoan, updateLoan, loans } = useStore()
   const [form, setForm] = useState<FormData>(defaultForm)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -63,6 +64,34 @@ export default function AddLoan() {
   const [totalRepay, setTotalRepay] = useState('')
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
   const [dueDays, setDueDays] = useState('')
+
+  const isEdit = !!id
+
+  useEffect(() => {
+    if (isEdit && loans.length > 0) {
+      const loan = loans.find(l => l.id === id)
+      if (loan) {
+        setForm({
+          borrower_name: loan.borrower_name,
+          borrower_phone: loan.borrower_phone || '',
+          borrower_address: loan.borrower_address || '',
+          borrower_id_card: loan.borrower_id_card || '',
+          loan_type: loan.loan_type,
+          principal: loan.principal.toString(),
+          interest_rate: loan.interest_rate.toString(),
+          interest_period: loan.interest_period,
+          start_date: loan.start_date,
+          due_date: loan.due_date,
+          installments: loan.installments?.toString() || '',
+          installment_amount: loan.installment_amount?.toString() || '',
+          collateral: loan.collateral || '',
+          guarantor_name: loan.guarantor_name || '',
+          notes: loan.notes || '',
+          include_first_day: loan.include_first_day
+        })
+      }
+    }
+  }, [id, loans, isEdit])
 
   const set = (key: keyof FormData, val: string | boolean) => {
     setForm(f => {
@@ -284,7 +313,8 @@ export default function AddLoan() {
     e.preventDefault()
     if (!validate()) return
     setSaving(true)
-    const loan = await addLoan({
+    
+    const loanData = {
       borrower_name: form.borrower_name.trim(),
       borrower_phone: form.borrower_phone,
       borrower_address: form.borrower_address,
@@ -300,11 +330,21 @@ export default function AddLoan() {
       include_first_day: form.include_first_day,
       collateral: form.collateral,
       guarantor_name: form.guarantor_name,
-      status: 'active',
       notes: form.notes,
-    })
-    setSaving(false)
-    if (loan) navigate(`/loans/${loan.id}`)
+    }
+
+    if (isEdit && id) {
+      await updateLoan(id, loanData)
+      setSaving(false)
+      navigate(`/loans/${id}`)
+    } else {
+      const loan = await addLoan({
+        ...loanData,
+        status: 'active'
+      })
+      setSaving(false)
+      if (loan) navigate(`/loans/${loan.id}`)
+    }
   }
 
   const needsInstallments = ['weekly', 'monthly', 'reducing'].includes(form.loan_type)
@@ -312,8 +352,8 @@ export default function AddLoan() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h2>➕ เพิ่มสินเชื่อใหม่</h2>
-        <p>สร้างบันทึกการปล่อยกู้ใหม่ในระบบ</p>
+        <h2>{isEdit ? '✏️ แก้ไขข้อมูลสินเชื่อ' : '➕ เพิ่มสินเชื่อใหม่'}</h2>
+        <p>{isEdit ? `กำลังแก้ไขข้อมูลของ ${form.borrower_name}` : 'สร้างบันทึกการปล่อยกู้ใหม่ในระบบ'}</p>
       </div>
 
       <div className="page-content">
@@ -498,7 +538,7 @@ export default function AddLoan() {
                 ยกเลิก
               </button>
               <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ minWidth: 180 }} disabled={saving}>
-                {saving ? <><span className="spinner" /> กำลังบันทึก...</> : '💾 บันทึกสินเชื่อ'}
+                {saving ? <><span className="spinner" /> กำลังบันทึก...</> : (isEdit ? '💾 อัปเดตข้อมูล' : '💾 บันทึกสินเชื่อ')}
               </button>
             </div>
           </form>
