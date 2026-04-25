@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import type { Loan } from '../lib/supabase'
 import { formatBaht } from '../lib/formatters'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 interface Props {
   loan: Loan
@@ -14,7 +14,6 @@ interface Props {
 
 export default function RestructureModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved }: Props) {
   const { restructureLoan } = useStore()
-  const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [closingAmount, setClosingAmount] = useState('0')
   const [closingDate, setClosingDate] = useState(new Date().toISOString().slice(0, 10))
@@ -49,20 +48,17 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
     calculateRate(newPrincipal, newInstallmentAmt, days.toString())
   }
 
-  // 🧮 Logic: Calculate Rate (%)
   const calculateRate = (p: string, amt: string, count: string) => {
-    const principal = parseFloat(p) || 0
-    const instAmt = parseFloat(amt) || 0
-    const instCount = parseInt(count) || 0
+    const pr = parseFloat(p) || 0
+    const ia = parseFloat(amt) || 0
+    const ic = parseInt(count) || 0
     
-    if (principal > 0 && instAmt > 0 && instCount > 0) {
-      const totalPayback = instAmt * instCount
-      const profit = totalPayback - principal
-      const totalRate = (profit / principal) * 100
-      
-      // Calculate daily rate because we save it with interest_period = 'daily'
-      const dailyRate = totalRate / instCount
-      setNewRate(dailyRate.toFixed(4)) // Use more precision for small daily rates
+    if (pr > 0 && ia > 0 && ic > 0) {
+      const totalPayback = ia * ic
+      const profit = totalPayback - pr
+      const totalRate = (profit / pr) * 100
+      const dailyRate = totalRate / ic
+      setNewRate(dailyRate.toFixed(4))
     }
   }
 
@@ -70,21 +66,17 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
     e.preventDefault()
     setSaving(true)
 
-    const principal = parseFloat(newPrincipal) || 0
-    const installments = parseInt(newInstallments) || 0
-    const installmentAmt = parseFloat(newInstallmentAmt) || 0
-
     try {
       await restructureLoan(
         loan.id,
         {
           closing_amount: parseFloat(closingAmount) || 0,
           closing_date: closingDate,
-          new_principal: principal,
+          new_principal: parseFloat(newPrincipal) || 0,
           new_loan_type: newType,
           new_interest_rate: parseFloat(newRate) || 0,
-          new_installments: installments,
-          new_installment_amount: installmentAmt,
+          new_installments: parseInt(newInstallments) || 0,
+          new_installment_amount: parseFloat(newInstallmentAmt) || 0,
           new_due_date: newDueDate
         }
       )
@@ -97,11 +89,12 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
     }
   }
 
-  const installmentAmt = parseFloat(newInstallmentAmt) || 0
-  const installments = parseInt(newInstallments) || 0
-  const principal = parseFloat(newPrincipal) || 0
-  const totalRepayment = installmentAmt * installments
-  const totalInterest = totalRepayment - principal
+  // Final Calculations for Display
+  const dispPrincipal = parseFloat(newPrincipal) || 0
+  const dispInstallment = parseFloat(newInstallmentAmt) || 0
+  const dispCount = parseInt(newInstallments) || 0
+  const dispTotal = dispInstallment * dispCount
+  const dispProfit = dispTotal - dispPrincipal
 
   return (
     <div className="modal-overlay">
@@ -114,7 +107,6 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           <div className="modal-body" style={{ display: 'flex', gap: 24, padding: 0 }}>
             <div className="modal-scroll-area" style={{ flex: 1, padding: 24, display: 'flex', gap: 24 }}>
               
-              {/* Left: Closing Old Loan */}
               <div className="card-section" style={{ flex: 1, background: 'var(--bg-secondary)' }}>
                 <div className="section-title-main" style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>🏁 1. ปิดจบยอดเดิม</div>
                 <div className="form-group">
@@ -122,64 +114,38 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                   <input className="form-input" type="date" value={closingDate} onChange={e => setClosingDate(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">ยอดที่ได้รับจริง (บาท)</label>
+                  <label className="form-label">ยอดที่ได้รับจริงวันนี้ (บาท)</label>
                   <input className="form-input" type="number" step="0.01" value={closingAmount} onChange={e => setClosingAmount(e.target.value)} required />
-                  <div className="form-hint" style={{ fontWeight: 600 }}>ยอดค้างในระบบ: {formatBaht(remainingPrincipal + accruedInterest)}</div>
-                </div>
-                <div className="alert alert-info" style={{ marginTop: 12, padding: '8px 12px', fontSize: '0.8rem' }}>
-                  📢 สัญญาเดิมจะถูกเปลี่ยนสถานะเป็น <strong>"จบยอดแล้ว"</strong> ทันที
+                  <div className="form-hint" style={{ fontWeight: 600 }}>ยอดค้างรวมดอก: {formatBaht(remainingPrincipal + accruedInterest)}</div>
                 </div>
               </div>
 
-              {/* Center: Opening New Loan */}
               <div className="card-section" style={{ flex: 1.5, background: 'var(--success-bg)', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
                 <div className="section-title-main" style={{ color: 'var(--success)', marginBottom: 16 }}>🌳 2. ตั้งยอดใหม่ทันที</div>
-                
                 <div className="form-group">
                   <label className="form-label">เงินต้นก้อนใหม่ (บาท)</label>
-                  <input 
-                    className="form-input" 
-                    type="number" 
-                    step="0.01" 
-                    value={newPrincipal} 
-                    onChange={e => {
-                      setNewPrincipal(e.target.value)
-                      calculateRate(e.target.value, newInstallmentAmt, newInstallments)
-                    }} 
-                    required 
-                  />
+                  <input className="form-input" type="number" step="0.01" value={newPrincipal} onChange={e => {
+                    setNewPrincipal(e.target.value)
+                    calculateRate(e.target.value, newInstallmentAmt, newInstallments)
+                  }} required />
                 </div>
-
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">ยอดส่ง (บาท/งวด)</label>
-                    <input 
-                      className="form-input" 
-                      type="number" 
-                      step="0.01" 
-                      value={newInstallmentAmt} 
-                      onChange={e => {
-                        setNewInstallmentAmt(e.target.value)
-                        calculateRate(newPrincipal, e.target.value, newInstallments)
-                      }} 
-                      placeholder="เช่น 1000"
-                    />
+                    <input className="form-input" type="number" step="0.01" value={newInstallmentAmt} onChange={e => {
+                      setNewInstallmentAmt(e.target.value)
+                      calculateRate(newPrincipal, e.target.value, newInstallments)
+                    }} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">จำนวนงวด (วัน)</label>
-                    <input 
-                      className="form-input" 
-                      type="number" 
-                      value={newInstallments} 
-                      onChange={e => {
-                        setNewInstallments(e.target.value)
-                        updateDueDate(e.target.value)
-                        calculateRate(newPrincipal, newInstallmentAmt, e.target.value)
-                      }} 
-                    />
+                    <input className="form-input" type="number" value={newInstallments} onChange={e => {
+                      setNewInstallments(e.target.value)
+                      updateDueDate(e.target.value)
+                      calculateRate(newPrincipal, newInstallmentAmt, e.target.value)
+                    }} />
                   </div>
                 </div>
-
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">วันครบกำหนด</label>
@@ -189,35 +155,34 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                     }} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">ดอกเบี้ยเฉลี่ย/วัน (%)</label>
-                    <input className="form-input" value={`${newRate}%`} readOnly style={{ background: 'rgba(255,255,255,0.5)' }} />
+                    <label className="form-label">ดอกเบี้ยคำนวณ (%)</label>
+                    <input className="form-input" value={`${newRate}%`} readOnly />
                   </div>
                 </div>
               </div>
 
-              {/* Right: Summary Sidebar */}
               <div className="summary-sidebar" style={{ width: 280, borderLeft: '1px solid var(--border)', paddingLeft: 24 }}>
                 <div className="section-title-main" style={{ marginBottom: 16 }}>📊 สรุปยอดใหม่</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div className="receipt-row">
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>เงินต้นใหม่</span>
-                    <span style={{ fontWeight: 700 }}>{formatBaht(principal)}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>เงินต้น</span>
+                    <span style={{ fontWeight: 700 }}>{formatBaht(dispPrincipal)}</span>
                   </div>
                   <div className="receipt-row">
                     <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>ยอดส่งต่อวัน</span>
-                    <span style={{ fontWeight: 700 }}>{formatBaht(installmentAmt)}</span>
+                    <span style={{ fontWeight: 700 }}>{formatBaht(dispInstallment)}</span>
                   </div>
                   <div className="receipt-row">
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>จำนวน {installments} วัน</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>ระยะเวลา {dispCount} วัน</span>
                   </div>
                   <div className="divider" style={{ margin: '8px 0' }} />
                   <div className="receipt-row">
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>กำไรรวมทั้งหมด</span>
-                    <span style={{ fontWeight: 700, color: 'var(--success)' }}>{formatBaht(totalInterest)}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>กำไรรวม</span>
+                    <span style={{ fontWeight: 700, color: 'var(--success)' }}>{formatBaht(dispProfit)}</span>
                   </div>
                   <div className="receipt-row total-row" style={{ marginTop: 8, background: 'var(--gold-glow)', padding: '12px 8px', borderRadius: 8 }}>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>ยอดรวมที่ต้องได้รับ</span>
-                    <span style={{ fontWeight: 800, color: 'var(--gold)', fontSize: '1.1rem' }}>{formatBaht(totalRepayment)}</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>ยอดรวมที่จะได้รับ</span>
+                    <span style={{ fontWeight: 800, color: 'var(--gold)', fontSize: '1.2rem' }}>{formatBaht(dispTotal)}</span>
                   </div>
                 </div>
               </div>
@@ -227,7 +192,7 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>ยกเลิก</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? '⏳ กำลังบันทึก...' : '🚀 ยืนยันการปรับโครงสร้าง'}
+              {saving ? '⏳ กำลังบันทึก...' : '🚀 ยืนยันปรับโครงสร้าง'}
             </button>
           </div>
         </form>
