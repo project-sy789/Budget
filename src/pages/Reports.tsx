@@ -91,6 +91,28 @@ export default function Reports() {
     URL.revokeObjectURL(url)
   }
 
+  // Summary totals based on active tab
+  const summaryTotals = useMemo(() => {
+    const data = tab === 'daily' ? monthTotals : 
+                 tab === 'monthly' ? monthlyData.reduce((s, m) => ({ 
+                    interest: s.interest + m.interest, 
+                    principal: s.principal + m.principal, 
+                    total: s.interest + m.interest + s.principal + m.principal,
+                    count: s.count + m.count 
+                  }), { interest: 0, principal: 0, total: 0, count: 0 }) :
+                 yearlyData.reduce((s, y) => ({ 
+                    interest: s.interest + y.interest, 
+                    principal: s.principal + y.principal, 
+                    total: s.interest + y.interest + s.principal + y.principal,
+                    count: s.count + y.count 
+                  }), { interest: 0, principal: 0, total: 0, count: 0 });
+
+    const label = tab === 'daily' ? `(${format(new Date(selectedMonth), 'MMM yyyy', { locale: th })})` :
+                  tab === 'monthly' ? '(12 เดือนล่าสุด)' : '(ทุกปี)';
+    
+    return { ...data, label };
+  }, [tab, monthTotals, monthlyData, yearlyData, selectedMonth])
+
   const chartData = tab === 'daily' ? dailyData : tab === 'monthly' ? monthlyData : yearlyData
   const xKey = 'label'
 
@@ -106,35 +128,33 @@ export default function Reports() {
         </div>
       </div>
       <div className="page-content">
-        {/* Summary Cards */}
-        {tab === 'daily' && (
-          <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
-            <div className="kpi-card gold">
-              <div className="kpi-label">ดอกเบี้ยรับ ({format(new Date(selectedMonth), 'MMM yyyy', { locale: th })})</div>
-              <div className="kpi-value gold">{formatBaht(monthTotals.interest)}</div>
-              <div className="kpi-sub">จาก {monthTotals.count} รายการ</div>
-              <div className="kpi-icon">💰</div>
-            </div>
-            <div className="kpi-card success">
-              <div className="kpi-label">คืนต้น</div>
-              <div className="kpi-value success">{formatBaht(monthTotals.principal)}</div>
-              <div className="kpi-sub">เงินต้นที่รับคืน</div>
-              <div className="kpi-icon">📥</div>
-            </div>
-            <div className="kpi-card info">
-              <div className="kpi-label">ยอดรับรวม</div>
-              <div className="kpi-value" style={{ color: 'var(--info)' }}>{formatBaht(monthTotals.total)}</div>
-              <div className="kpi-sub">ดอก + ต้น</div>
-              <div className="kpi-icon">💵</div>
-            </div>
-            <div className="kpi-card purple">
-              <div className="kpi-label">จำนวนรายการ</div>
-              <div className="kpi-value" style={{ color: 'var(--purple)' }}>{monthTotals.count}</div>
-              <div className="kpi-sub">ทั้งหมด</div>
-              <div className="kpi-icon">📋</div>
-            </div>
+        {/* Summary Cards - Now always visible */}
+        <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
+          <div className="kpi-card gold">
+            <div className="kpi-label">ดอกเบี้ยรับ {summaryTotals.label}</div>
+            <div className="kpi-value gold">{formatBaht(summaryTotals.interest)}</div>
+            <div className="kpi-sub">จาก {summaryTotals.count} รายการ</div>
+            <div className="kpi-icon">💰</div>
           </div>
-        )}
+          <div className="kpi-card success">
+            <div className="kpi-label">คืนต้น</div>
+            <div className="kpi-value success">{formatBaht(summaryTotals.principal)}</div>
+            <div className="kpi-sub">เงินต้นที่รับคืน</div>
+            <div className="kpi-icon">📥</div>
+          </div>
+          <div className="kpi-card info">
+            <div className="kpi-label">ยอดรับรวม</div>
+            <div className="kpi-value" style={{ color: 'var(--info)' }}>{formatBaht(summaryTotals.interest + summaryTotals.principal)}</div>
+            <div className="kpi-sub">ดอก + ต้น</div>
+            <div className="kpi-icon">💵</div>
+          </div>
+          <div className="kpi-card purple">
+            <div className="kpi-label">จำนวนรายการ</div>
+            <div className="kpi-value" style={{ color: 'var(--purple)' }}>{summaryTotals.count}</div>
+            <div className="kpi-sub">ทั้งหมด</div>
+            <div className="kpi-icon">📋</div>
+          </div>
+        </div>
 
         {/* Tab & Controls */}
         <div className="card-section" style={{ marginBottom: 20 }}>
