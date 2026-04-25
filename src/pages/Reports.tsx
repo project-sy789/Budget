@@ -74,6 +74,29 @@ export default function Reports() {
     }
   }, [payments, selectedMonth])
 
+  // Portfolio Stats (Outstanding Principal)
+  const portfolioStats = useMemo(() => {
+    const activeLoans = loans.filter(l => l.status !== 'closed')
+    let totalOut = 0
+    let overdueOut = 0
+    let overdueCount = 0
+
+    activeLoans.forEach(loan => {
+      const lp = payments.filter(p => p.loan_id === loan.id)
+      const paidPrincipal = lp.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      const remaining = loan.principal - paidPrincipal
+      totalOut += remaining
+      
+      const isOverdue = new Date() > new Date(loan.due_date)
+      if (isOverdue || loan.status === 'overdue') {
+        overdueOut += remaining
+        overdueCount++
+      }
+    })
+
+    return { totalOut, overdueOut, overdueCount, activeCount: activeLoans.length }
+  }, [loans, payments])
+
   // Export CSV
   const exportCSV = () => {
     const rows = [['วันที่', 'ผู้กู้', 'ยอดรวม', 'ดอกเบี้ย', 'เงินต้น', 'วิธีชำระ', 'ใบเสร็จ']]
@@ -155,6 +178,45 @@ export default function Reports() {
             <div className="kpi-icon">📋</div>
           </div>
         </div>
+
+        <div className="divider" style={{ margin: '32px 0 24px 0' }} />
+
+        {/* Portfolio Overview Section */}
+        <div className="section-header" style={{ marginBottom: 16 }}>
+          <div>
+            <div className="section-title-main">🔍 สรุปพอร์ตสินเชื่อรวม (เงินทุนหมุนเวียน)</div>
+            <div className="section-subtitle">ภาพรวมเงินต้นที่อยู่กับลูกหนี้ทั้งหมดในขณะนี้</div>
+          </div>
+        </div>
+
+        <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
+          <div className="kpi-card info">
+            <div className="kpi-label">เงินต้นค้างคืนรวม</div>
+            <div className="kpi-value" style={{ color: 'var(--info)' }}>{formatBaht(portfolioStats.totalOut)}</div>
+            <div className="kpi-sub">ทุนที่หมุนอยู่ข้างนอก</div>
+            <div className="kpi-icon">🌍</div>
+          </div>
+          <div className="kpi-card danger">
+            <div className="kpi-label">ยอดที่เกินกำหนด (ต้น)</div>
+            <div className="kpi-value danger">{formatBaht(portfolioStats.overdueOut)}</div>
+            <div className="kpi-sub">จาก {portfolioStats.overdueCount} สัญญา</div>
+            <div className="kpi-icon">⚠️</div>
+          </div>
+          <div className="kpi-card purple">
+            <div className="kpi-label">สัญญากำลังดำเนินการ</div>
+            <div className="kpi-value" style={{ color: 'var(--purple)' }}>{portfolioStats.activeCount}</div>
+            <div className="kpi-sub">ลูกหนี้ทั้งหมดที่ยังไม่ปิด</div>
+            <div className="kpi-icon">🤝</div>
+          </div>
+          <div className="kpi-card gold">
+            <div className="kpi-label">ความเสี่ยงพอร์ต</div>
+            <div className="kpi-value gold">{((portfolioStats.overdueOut / (portfolioStats.totalOut || 1)) * 100).toFixed(1)}%</div>
+            <div className="kpi-sub">สัดส่วนหนี้ค้าง / ทุนรวม</div>
+            <div className="kpi-icon">📉</div>
+          </div>
+        </div>
+
+        <div className="divider" style={{ margin: '32px 0 24px 0' }} />
 
         {/* Tab & Controls */}
         <div className="card-section" style={{ marginBottom: 20 }}>
