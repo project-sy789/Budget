@@ -49,8 +49,6 @@ export default function DailyCheckin({ loan, payments }: Props) {
       let symbol = ''
       if (dayPayments.length > 0) {
         symbol = '✅'.repeat(dayPayments.length)
-      } else if (!isFuture) {
-        symbol = '📍'
       }
 
       data.push({
@@ -117,7 +115,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
   const generateReportText = () => {
     const startMonthName = format(startDate, 'MMMM', { locale: th })
     
-    let text = `🌳ต้น ${loan.principal.toLocaleString()}🌳  ${format(startDate, 'd')} ${startMonthName} พ.ศ.${startDate.getFullYear() + 543}\n\n`
+    let text = `🌳ต้น ${loan.principal.toLocaleString()}🌳\n${format(startDate, 'd')} ${startMonthName} พ.ศ. ${startDate.getFullYear() + 543}\n\n`
     if (defaultDailyAmt > 0) {
       text += `  🌼${defaultDailyAmt.toLocaleString()}/วัน🌼\n`
     }
@@ -132,7 +130,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
     })
     
     text += `\nรวมยอด ${loan.principal.toLocaleString()} 💸\n\n`
-    text += `🕑ส่งยอด20.30น.`
+    text += `🕑ส่งยอด 20.30 น.`
     
     return text
   }
@@ -201,7 +199,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
         
         <div style={{ marginTop: 16, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           <p>💡 <b>วิธีใช้:</b> กดที่วันที่เพื่อบันทึกการส่งยอด ({formatBaht(defaultDailyAmt)}) อัตโนมัติ</p>
-          <p>📍 = รอส่ง/ว่าง, ✅ = ส่งยอดแล้ว</p>
+          <p>✅ = ส่งยอดแล้ว</p>
         </div>
       </div>
       
