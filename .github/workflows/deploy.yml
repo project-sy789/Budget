@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Deploy
-        run: npm run deploy
+      - name: Build
+        run: npm run build:ci
+
+      - name: Deploy to gh-pages
+        run: npx gh-pages -d dist -u "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
 
