@@ -327,7 +327,7 @@ export default function AddLoan() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8, minHeight: 34 }}>
+                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
                     <div className="segmented-control" style={{ width: 140 }}>
                       <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => interestMode !== 'percent' && toggleInterestMode()}>%</button>
@@ -351,7 +351,7 @@ export default function AddLoan() {
                   )}
                 </div>
                 <div className="form-group">
-                  <div style={{ minHeight: 34, display: 'flex', alignItems: 'flex-end', marginBottom: 8 }}>
+                  <div style={{ height: 36, display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>ระยะเวลาคิดดอก</label>
                   </div>
                   <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
@@ -361,14 +361,14 @@ export default function AddLoan() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <div style={{ minHeight: 34, display: 'flex', alignItems: 'flex-end', marginBottom: 8 }}>
+                  <div style={{ height: 36, display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>วันเริ่มกู้ <span className="required">*</span></label>
                   </div>
                   <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
                   {errors.start_date && <div className="form-error">{errors.start_date}</div>}
                 </div>
                 <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8, minHeight: 34 }}>
+                  <div style={{ height: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>วันครบกำหนด <span className="required">*</span></label>
                     <div className="segmented-control" style={{ width: 140 }}>
                       <button type="button" className={`segment-btn ${dueMode === 'date' ? 'active' : ''}`} onClick={() => setDueMode('date')}>วันที่</button>
