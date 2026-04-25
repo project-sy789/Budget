@@ -428,7 +428,7 @@ export default function AddLoan() {
                       <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>วัน</button>
                     </div>
                   </div>
-                  <div className="form-row" style={{ gap: 8 }}>
+                  <div className="form-row stack-on-ipad">
                     <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                       <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
                     </div>

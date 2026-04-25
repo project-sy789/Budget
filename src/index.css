@@ -781,13 +781,42 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 .form-hint-pill {
   display: inline-block;
-  padding: 2px 8px;
-  background: var(--gold-glow);
-  color: var(--gold);
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  margin-top: 6px;
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Stack rows on iPad */
+@media (max-width: 1024px) {
+  .stack-on-ipad {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .stack-on-ipad .form-group {
+    width: 100% !important;
+    flex: none !important;
+  }
+}
+
+/* Ensure date inputs are legible */
+input[type="date"].form-input {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 1rem;
+}
+
+/* Fix iPad/iOS date input appearance */
+@supports (-webkit-overflow-scrolling: touch) {
+  input[type="date"].form-input {
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }
 
 /* ===== PROGRESS BAR ===== */
