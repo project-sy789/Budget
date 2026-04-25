@@ -37,16 +37,26 @@ export default function Dashboard() {
       return s + r.dailyInterest
     }, 0)
 
-    const now = new Date()
-    const monthStart = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd')
-    const yearStart = format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd')
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const todayPayments = payments.filter(p => p.payment_date === todayStr)
+    const todayRealizedInterest = todayPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
 
     const monthPayments = payments.filter(p => p.payment_date >= monthStart)
     const monthInterest = monthPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
     const monthPrincipal = monthPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
     const yearInterest = payments.filter(p => p.payment_date >= yearStart).reduce((s, p) => s + (p.interest_paid || 0), 0)
 
-    return { active: active.length, overdue: overdue.length, totalPrincipal, todayInterest, monthInterest, monthPrincipal, yearInterest, total: loans.length }
+    return { 
+      active: active.length, 
+      overdue: overdue.length, 
+      totalPrincipal, 
+      todayInterest, 
+      todayRealizedInterest,
+      monthInterest, 
+      monthPrincipal, 
+      yearInterest, 
+      total: loans.length 
+    }
   }, [loans, payments])
 
   const monthlyData = useMemo(() =>
@@ -103,9 +113,9 @@ export default function Dashboard() {
             <div className="kpi-icon">💼</div>
           </div>
           <div className="kpi-card success">
-            <div className="kpi-label">ดอกเบี้ยต่อวัน (วันนี้)</div>
-            <div className="kpi-value success">{formatBaht(stats.todayInterest)}</div>
-            <div className="kpi-sub">ค่าเฉลี่ยจากพอร์ต active</div>
+            <div className="kpi-label">ดอกเบี้ยรับจริงวันนี้</div>
+            <div className="kpi-value success">{formatBaht(stats.todayRealizedInterest)}</div>
+            <div className="kpi-sub">เฉลี่ยตามสัดส่วน: {formatBaht(stats.todayInterest)}/วัน</div>
             <div className="kpi-icon">📅</div>
           </div>
           <div className="kpi-card info">
