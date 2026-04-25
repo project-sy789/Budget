@@ -1,0 +1,129 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useStore } from '../store/useStore'
+import { formatBaht, formatDate, isOverdue, loanTypeLabel, loanTypeBadgeClass, statusBadgeClass, statusLabel } from '../lib/formatters'
+
+export default function Loans() {
+  const { loans, fetchLoans, deleteLoan } = useStore()
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterType, setFilterType] = useState('')
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    fetchLoans()
+    const s = searchParams.get('status')
+    if (s) setFilterStatus(s)
+  }, [])
+
+  const filtered = useMemo(() => {
+    return loans.filter(l => {
+      const matchSearch = !search || l.borrower_name.includes(search) || l.borrower_phone?.includes(search)
+      const matchStatus = !filterStatus || l.status === filterStatus
+      const matchType = !filterType || l.loan_type === filterType
+      return matchSearch && matchStatus && matchType
+    })
+  }, [loans, search, filterStatus, filterType])
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`ลบสินเชื่อของ "${name}" ออกหรือไม่?\n(ประวัติการชำระทั้งหมดจะถูกลบด้วย)`)) return
+    await deleteLoan(id)
+  }
+
+  return (
+    <div className="fade-in">
+      <div className="page-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2>📋 รายการสินเชื่อทั้งหมด</h2>
+            <p>พบ {filtered.length} รายการ</p>
+          </div>
+          <Link to="/add-loan" className="btn btn-primary">➕ เพิ่มสินเชื่อใหม่</Link>
+        </div>
+      </div>
+      <div className="page-content">
+        {/* Search & Filters */}
+        <div className="search-bar">
+          <div className="search-input-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              className="form-input"
+              placeholder="ค้นหาชื่อ หรือเบอร์โทร..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <select className="form-select" style={{ width: 160 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="">ทุกสถานะ</option>
+            <option value="active">กำลังดำเนินการ</option>
+            <option value="overdue">ค้างชำระ</option>
+            <option value="closed">ปิดบัญชีแล้ว</option>
+            <option value="restructured">ปรับโครงสร้าง</option>
+          </select>
+          <select className="form-select" style={{ width: 180 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <option value="">ทุกประเภท</option>
+            <option value="daily">ดอกรายวัน</option>
+            <option value="weekly">ผ่อนรายอาทิตย์</option>
+            <option value="monthly">ผ่อนรายเดือน</option>
+            <option value="upfront">ดอกหน้า</option>
+            <option value="bullet">เงินก้อน+ดอก</option>
+            <option value="reducing">ลดต้นลดดอก</option>
+          </select>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
+            <h3>ไม่พบรายการสินเชื่อ</h3>
+            <p>ลองเปลี่ยนคำค้นหา หรือ <Link to="/add-loan" style={{ color: 'var(--gold)' }}>เพิ่มสินเชื่อใหม่</Link></p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ชื่อผู้กู้</th>
+                  <th>ประเภท</th>
+                  <th>เงินต้น</th>
+                  <th>อัตราดอก</th>
+                  <th>วันเริ่ม</th>
+                  <th>ครบกำหนด</th>
+                  <th>สถานะ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(loan => {
+                  const overdue = loan.status === 'active' && isOverdue(loan.due_date)
+                  return (
+                    <tr key={loan.id} className={overdue ? 'row-overdue' : ''}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{loan.borrower_name}</div>
+                        {loan.borrower_phone && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{loan.borrower_phone}</div>}
+                      </td>
+                      <td><span className={`badge ${loanTypeBadgeClass(loan.loan_type)}`}>{loanTypeLabel(loan.loan_type)}</span></td>
+                      <td className="td-amount td-gold">{formatBaht(loan.principal)}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{loan.interest_rate}% / {loan.interest_period === 'daily' ? 'วัน' : loan.interest_period === 'weekly' ? 'อาทิตย์' : loan.interest_period === 'monthly' ? 'เดือน' : 'ปี'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{formatDate(loan.start_date)}</td>
+                      <td style={{ color: overdue ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: overdue ? 700 : 400 }}>
+                        {formatDate(loan.due_date)}
+                        {overdue && <div style={{ fontSize: '0.72rem' }}>⚠️ เกินกำหนด</div>}
+                      </td>
+                      <td><span className={`badge ${statusBadgeClass(loan.status)}`}>{statusLabel(loan.status)}</span></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <Link to={`/loans/${loan.id}`} className="btn btn-secondary btn-sm">รายละเอียด</Link>
+                          <button onClick={() => handleDelete(loan.id, loan.borrower_name)} className="btn btn-danger btn-sm btn-icon" title="ลบ">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

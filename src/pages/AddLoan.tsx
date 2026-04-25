@@ -1,0 +1,351 @@
+import React, { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useStore } from '../store/useStore'
+import {
+  calcDailyFlat, calcUpfront, calcBullet,
+  calcWeeklyInstallment, calcMonthlyInstallment, calcReducing
+} from '../lib/calculations'
+import type { AmortRow } from '../lib/calculations'
+import { formatBaht } from '../lib/formatters'
+
+const LOAN_TYPES = [
+  { value: 'daily', label: '📅 ดอกรายวัน', desc: 'คิดดอกเบี้ยรายวันบนยอดต้นคงเหลือ' },
+  { value: 'weekly', label: '📆 ผ่อนรายอาทิตย์', desc: 'ผ่อนทุกอาทิตย์ ดอกคงที่' },
+  { value: 'monthly', label: '🗓️ ผ่อนรายเดือน', desc: 'ผ่อนทุกเดือน ดอกคงที่' },
+  { value: 'upfront', label: '💸 ดอกหน้า', desc: 'หักดอกเบี้ยล่วงหน้าตอนรับเงิน' },
+  { value: 'bullet', label: '💰 เงินก้อน+ดอก', desc: 'จ่ายทั้งหมดตอนครบกำหนด' },
+  { value: 'reducing', label: '📉 ลดต้นลดดอก', desc: 'ดอกคิดจากยอดต้นคงเหลือ' },
+]
+
+const PERIODS = [
+  { value: 'daily', label: '% ต่อวัน' },
+  { value: 'weekly', label: '% ต่ออาทิตย์' },
+  { value: 'monthly', label: '% ต่อเดือน' },
+  { value: 'yearly', label: '% ต่อปี' },
+]
+
+interface FormData {
+  borrower_name: string
+  borrower_phone: string
+  borrower_address: string
+  borrower_id_card: string
+  loan_type: string
+  principal: string
+  interest_rate: string
+  interest_period: string
+  start_date: string
+  due_date: string
+  installments: string
+  collateral: string
+  guarantor_name: string
+  notes: string
+}
+
+const defaultForm: FormData = {
+  borrower_name: '', borrower_phone: '', borrower_address: '', borrower_id_card: '',
+  loan_type: 'daily', principal: '', interest_rate: '1', interest_period: 'daily',
+  start_date: new Date().toISOString().slice(0, 10),
+  due_date: '', installments: '4', collateral: '', guarantor_name: '', notes: '',
+}
+
+export default function AddLoan() {
+  const navigate = useNavigate()
+  const { addLoan } = useStore()
+  const [form, setForm] = useState<FormData>(defaultForm)
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const set = (key: keyof FormData, val: string) => {
+    setForm(f => ({ ...f, [key]: val }))
+    setErrors(e => ({ ...e, [key]: '' }))
+  }
+
+  // Preview calculations
+  const preview = useMemo(() => {
+    const p = parseFloat(form.principal) || 0
+    const r = parseFloat(form.interest_rate) || 0
+    const period = form.interest_period as any
+    const inst = parseInt(form.installments) || 4
+    const start = form.start_date || new Date().toISOString().slice(0, 10)
+
+    if (p <= 0 || r <= 0) return null
+
+    const daysToDate = form.due_date
+      ? Math.max(1, Math.ceil((new Date(form.due_date).getTime() - new Date(start).getTime()) / 86400000))
+      : 30
+
+    switch (form.loan_type) {
+      case 'daily': {
+        const res = calcDailyFlat(p, r, period, daysToDate)
+        return { summary: [
+          { label: 'ดอกเบี้ยต่อวัน', value: formatBaht(res.dailyInterest) },
+          { label: `ดอกเบี้ยรวม (${daysToDate} วัน)`, value: formatBaht(res.totalInterest) },
+          { label: 'ยอดรวมทั้งหมด', value: formatBaht(res.totalRepay) },
+        ], rows: null }
+      }
+      case 'upfront': {
+        const res = calcUpfront(p, r, period, daysToDate)
+        return { summary: [
+          { label: 'ดอกหักล่วงหน้า', value: formatBaht(res.upfrontInterest) },
+          { label: 'ผู้กู้รับจริง', value: formatBaht(res.received) },
+          { label: 'ยอดที่ต้องคืน', value: formatBaht(res.totalRepay) },
+        ], rows: null }
+      }
+      case 'bullet': {
+        const res = calcBullet(p, r, period, daysToDate)
+        return { summary: [
+          { label: `ดอกเบี้ยรวม (${daysToDate} วัน)`, value: formatBaht(res.totalInterest) },
+          { label: 'ยอดจ่ายตอนครบกำหนด', value: formatBaht(res.totalRepay) },
+        ], rows: null }
+      }
+      case 'weekly': {
+        const rows = calcWeeklyInstallment(p, r, period, inst, start)
+        const total = rows.reduce((s, r) => s + r.payment, 0)
+        return { summary: [
+          { label: 'จ่ายต่อครั้ง', value: formatBaht(rows[0]?.payment || 0) },
+          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
+          { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+        ], rows }
+      }
+      case 'monthly': {
+        const rows = calcMonthlyInstallment(p, r, period, inst, start)
+        const total = rows.reduce((s, r) => s + r.payment, 0)
+        return { summary: [
+          { label: 'จ่ายต่อครั้ง', value: formatBaht(rows[0]?.payment || 0) },
+          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
+          { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+        ], rows }
+      }
+      case 'reducing': {
+        const rows = calcReducing(p, r, period, inst, start)
+        const total = rows.reduce((s, r) => s + r.payment, 0)
+        return { summary: [
+          { label: 'งวดแรก', value: formatBaht(rows[0]?.payment || 0) },
+          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
+          { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+        ], rows }
+      }
+      default: return null
+    }
+  }, [form.loan_type, form.principal, form.interest_rate, form.interest_period, form.start_date, form.due_date, form.installments])
+
+  const validate = () => {
+    const e: Record<string, string> = {}
+    if (!form.borrower_name.trim()) e.borrower_name = 'กรุณากรอกชื่อผู้กู้'
+    if (!form.principal || parseFloat(form.principal) <= 0) e.principal = 'กรุณากรอกจำนวนเงิน'
+    if (!form.interest_rate || parseFloat(form.interest_rate) <= 0) e.interest_rate = 'กรุณากรอกอัตราดอกเบี้ย'
+    if (!form.start_date) e.start_date = 'กรุณาเลือกวันเริ่มกู้'
+    if (!form.due_date) e.due_date = 'กรุณาเลือกวันครบกำหนด'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validate()) return
+    setSaving(true)
+    const loan = await addLoan({
+      borrower_name: form.borrower_name.trim(),
+      borrower_phone: form.borrower_phone,
+      borrower_address: form.borrower_address,
+      borrower_id_card: form.borrower_id_card,
+      loan_type: form.loan_type as any,
+      principal: parseFloat(form.principal),
+      interest_rate: parseFloat(form.interest_rate),
+      interest_period: form.interest_period as any,
+      start_date: form.start_date,
+      due_date: form.due_date,
+      installments: form.installments ? parseInt(form.installments) : null,
+      installment_amount: preview?.summary[0]?.value ? parseFloat(preview.summary[0].value.replace(/[^0-9.]/g, '')) : null,
+      collateral: form.collateral,
+      guarantor_name: form.guarantor_name,
+      status: 'active',
+      notes: form.notes,
+    })
+    setSaving(false)
+    if (loan) navigate(`/loans/${loan.id}`)
+  }
+
+  const needsInstallments = ['weekly', 'monthly', 'reducing'].includes(form.loan_type)
+
+  return (
+    <div className="fade-in">
+      <div className="page-header">
+        <h2>➕ เพิ่มสินเชื่อใหม่</h2>
+        <p>กรอกข้อมูลการปล่อยกู้</p>
+      </div>
+      <div className="page-content">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24 }}>
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            {/* Loan Type */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div className="section-title">ประเภทการปล่อยกู้</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {LOAN_TYPES.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => set('loan_type', t.value)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${form.loan_type === t.value ? 'var(--gold)' : 'var(--border)'}`,
+                      background: form.loan_type === t.value ? 'var(--gold-glow)' : 'var(--bg-input)',
+                      color: form.loan_type === t.value ? 'var(--gold)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{t.label}</div>
+                    <div style={{ fontSize: '0.72rem', marginTop: 2, opacity: 0.8 }}>{t.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Borrower */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div className="section-title">ข้อมูลผู้กู้</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">ชื่อ-นามสกุล <span className="required">*</span></label>
+                  <input id="borrower-name" className="form-input" value={form.borrower_name} onChange={e => set('borrower_name', e.target.value)} placeholder="ชื่อผู้กู้" />
+                  {errors.borrower_name && <div className="form-error">{errors.borrower_name}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">เบอร์โทรศัพท์</label>
+                  <input className="form-input" value={form.borrower_phone} onChange={e => set('borrower_phone', e.target.value)} placeholder="08X-XXX-XXXX" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">เลขบัตรประชาชน</label>
+                  <input className="form-input" value={form.borrower_id_card} onChange={e => set('borrower_id_card', e.target.value)} placeholder="X-XXXX-XXXXX-XX-X" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">ผู้ค้ำประกัน</label>
+                  <input className="form-input" value={form.guarantor_name} onChange={e => set('guarantor_name', e.target.value)} placeholder="ชื่อผู้ค้ำ" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">ที่อยู่</label>
+                <textarea className="form-textarea" value={form.borrower_address} onChange={e => set('borrower_address', e.target.value)} placeholder="ที่อยู่ผู้กู้" style={{ minHeight: 60 }} />
+              </div>
+            </div>
+
+            {/* Loan Details */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div className="section-title">รายละเอียดสินเชื่อ</div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">เงินต้น (บาท) <span className="required">*</span></label>
+                  <input id="principal-input" className="form-input" type="number" value={form.principal} onChange={e => set('principal', e.target.value)} placeholder="10000" min="1" />
+                  {errors.principal && <div className="form-error">{errors.principal}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">หลักประกัน</label>
+                  <input className="form-input" value={form.collateral} onChange={e => set('collateral', e.target.value)} placeholder="โฉนด, ทะเบียนรถ, ฯลฯ" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">อัตราดอกเบี้ย <span className="required">*</span></label>
+                  <input id="rate-input" className="form-input" type="number" step="0.01" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} placeholder="1" />
+                  {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">คิดดอก</label>
+                  <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
+                    {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">วันเริ่มกู้ <span className="required">*</span></label>
+                  <input className="form-input" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
+                  {errors.start_date && <div className="form-error">{errors.start_date}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">วันครบกำหนด <span className="required">*</span></label>
+                  <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+                  {errors.due_date && <div className="form-error">{errors.due_date}</div>}
+                </div>
+              </div>
+              {needsInstallments && (
+                <div className="form-group">
+                  <label className="form-label">จำนวนงวด</label>
+                  <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
+                </div>
+              )}
+              <div className="form-group">
+                <label className="form-label">หมายเหตุ</label>
+                <textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 60 }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" disabled={saving}>
+                {saving ? <><span className="spinner" /> กำลังบันทึก...</> : '💾 บันทึกสินเชื่อ'}
+              </button>
+              <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate('/loans')}>ยกเลิก</button>
+            </div>
+          </form>
+
+          {/* Preview Panel */}
+          <div>
+            <div className="card" style={{ position: 'sticky', top: 20 }}>
+              <div className="section-title">📊 ตัวอย่างการคำนวณ</div>
+              {!preview ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
+                  กรอกข้อมูลเงินต้นและดอกเบี้ย<br />เพื่อดูตัวอย่าง
+                </div>
+              ) : (
+                <>
+                  {preview.summary.map((s, i) => (
+                    <div key={i} className="receipt-row">
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.label}</span>
+                      <span style={{ fontWeight: 700, color: i === preview.summary.length - 1 ? 'var(--gold)' : 'var(--text-primary)' }}>{s.value}</span>
+                    </div>
+                  ))}
+                  {preview.rows && preview.rows.length > 0 && (
+                    <>
+                      <div className="divider" />
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>ตารางผ่อนชำระ</div>
+                      <div className="amort-table-wrap">
+                        <table style={{ fontSize: '0.78rem' }}>
+                          <thead>
+                            <tr>
+                              <th>งวด</th>
+                              <th>วันที่</th>
+                              <th>ดอก</th>
+                              <th>ต้น</th>
+                              <th>คงเหลือ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {preview.rows.slice(0, 24).map((r: AmortRow) => (
+                              <tr key={r.period}>
+                                <td>{r.period}</td>
+                                <td>{r.date.slice(5)}</td>
+                                <td style={{ color: 'var(--gold)' }}>{r.interest.toLocaleString()}</td>
+                                <td>{r.principal.toLocaleString()}</td>
+                                <td style={{ color: 'var(--text-muted)' }}>{r.balance.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
