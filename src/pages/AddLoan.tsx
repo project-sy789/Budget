@@ -69,7 +69,7 @@ export default function AddLoan() {
       const newForm = { ...f, [key]: val }
       
       // Auto-sync interest_period when loan_type changes
-      if (key === 'loan_type') {
+      if (key === 'loan_type' && typeof val === 'string') {
         if (val === 'daily') newForm.interest_period = 'daily'
         else if (val === 'weekly') newForm.interest_period = 'weekly'
         else if (val === 'monthly') newForm.interest_period = 'monthly'
@@ -80,7 +80,7 @@ export default function AddLoan() {
       }
 
       // Sync interest if mode is amount and principal or rate changes
-      if (interestMode === 'amount' && key === 'principal') {
+      if (interestMode === 'amount' && key === 'principal' && typeof val === 'string') {
         const p = parseFloat(val) || 0
         const amt = parseFloat(interestAmount) || 0
         if (p > 0) {
