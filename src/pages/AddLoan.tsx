@@ -56,6 +56,8 @@ export default function AddLoan() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [interestMode, setInterestMode] = useState<'percent' | 'amount'>('percent')
   const [interestAmount, setInterestAmount] = useState('')
+  const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
+  const [dueDays, setDueDays] = useState('')
 
   const set = (key: keyof FormData, val: string) => {
     setForm(f => {
@@ -91,6 +93,20 @@ export default function AddLoan() {
     if (p > 0) {
       set('interest_rate', ((amt / p) * 100).toFixed(4))
     }
+  }
+
+  const handleDueDaysChange = (val: string) => {
+    setDueDays(val)
+    const days = parseInt(val) || 0
+    if (days > 0 && form.start_date) {
+      const d = new Date(form.start_date)
+      d.setDate(d.getDate() + days)
+      set('due_date', d.toISOString().split('T')[0])
+    }
+  }
+
+  const toggleDueMode = () => {
+    setDueMode(prev => prev === 'date' ? 'days' : 'date')
   }
 
   const toggleInterestMode = () => {
@@ -333,9 +349,25 @@ export default function AddLoan() {
                   {errors.start_date && <div className="form-error">{errors.start_date}</div>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">วันครบกำหนด <span className="required">*</span></label>
-                  <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8, minHeight: 34 }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>วันครบกำหนด <span className="required">*</span></label>
+                    <div className="segmented-control" style={{ width: 140 }}>
+                      <button type="button" className={`segment-btn ${dueMode === 'date' ? 'active' : ''}`} onClick={() => setDueMode('date')}>วันที่</button>
+                      <button type="button" className={`segment-btn ${dueMode === 'days' ? 'active' : ''}`} onClick={() => setDueMode('days')}>จำนวนวัน</button>
+                    </div>
+                  </div>
+                  {dueMode === 'date' ? (
+                    <input className="form-input" type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} />
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <input className="form-input" type="number" value={dueDays} onChange={e => handleDueDaysChange(e.target.value)} placeholder="เช่น 30" style={{ paddingRight: 40 }} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>วัน</span>
+                    </div>
+                  )}
                   {errors.due_date && <div className="form-error">{errors.due_date}</div>}
+                  {dueMode === 'days' && form.due_date && (
+                    <div className="form-hint-pill">📅 ครบกำหนด: {new Date(form.due_date).toLocaleDateString('th-TH')}</div>
+                  )}
                 </div>
               </div>
               {needsInstallments && (
