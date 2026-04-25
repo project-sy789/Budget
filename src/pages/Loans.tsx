@@ -97,8 +97,9 @@ export default function Loans() {
               <tbody>
                 {filtered.map(loan => {
                   const overdue = loan.status === 'active' && isOverdue(loan.due_date)
+                  const rowClass = overdue ? 'row-overdue' : loan.status === 'closed' ? 'row-closed' : loan.status === 'restructured' ? 'row-restructured' : ''
                   return (
-                    <tr key={loan.id} className={overdue ? 'row-overdue' : ''}>
+                    <tr key={loan.id} className={rowClass}>
                       <td>
                         <div style={{ fontWeight: 600 }}>{loan.borrower_name}</div>
                         {loan.borrower_phone && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{loan.borrower_phone}</div>}

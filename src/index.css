@@ -379,6 +379,15 @@ td {
 tr:hover td { background: rgba(255,255,255,0.02); }
 .td-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
 .td-gold { color: var(--gold); }
+ 
+/* Row Status Styles */
+tr.row-overdue td { background: var(--danger-bg); border-top-color: rgba(239, 68, 68, 0.2); }
+tr.row-overdue td:first-child { border-left: 4px solid var(--danger); }
+tr.row-closed td { opacity: 0.5; background: rgba(136, 153, 187, 0.05); }
+tr.row-closed .td-gold { color: var(--text-muted); }
+tr.row-success td { background: var(--success-bg); }
+tr.row-restructured td { background: var(--warning-bg); }
+tr.row-restructured td:first-child { border-left: 4px solid var(--warning); }
 
 /* ===== MODAL ===== */
 .modal-overlay {
