@@ -10,6 +10,7 @@ import AddLoan from './pages/AddLoan'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Sidebar from './components/Sidebar'
+import MobileNav from './components/MobileNav'
 import './index.css'
 
 export default function App() {
@@ -22,7 +23,7 @@ export default function App() {
     } else {
       document.documentElement.removeAttribute('data-theme')
     }
-  }, [])
+  }, [theme])
 
   useEffect(() => {
     if (authed) {
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
           </Routes>
         </main>
+        <MobileNav />
       </div>
     </HashRouter>
   )

@@ -1207,3 +1207,70 @@ input[type="date"].form-input {
   font-weight: 800;
   color: var(--gold);
 }
+
+/* ===== MOBILE NAVIGATION (BOTTOM BAR) ===== */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  grid-template-columns: repeat(5, 1fr);
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: content-box;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-muted);
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-item.active {
+  color: var(--gold);
+}
+
+.mobile-nav-icon {
+  font-size: 1.25rem;
+}
+
+.mobile-nav-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none !important;
+  }
+  
+  .mobile-nav {
+    display: grid;
+  }
+  
+  .main-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .app-layout {
+    display: block;
+  }
+
+  .page-header {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+}
