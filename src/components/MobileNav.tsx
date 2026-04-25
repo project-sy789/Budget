@@ -8,6 +8,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/', label: 'หน้าหลัก', icon: '🏠' },
+  { path: '/agents', label: 'สายส่ง', icon: '🤝' },
   { path: '/loans', label: 'สินเชื่อ', icon: '📋' },
   { path: '/add-loan', label: 'เพิ่ม', icon: '➕' },
   { path: '/payments', label: 'จ่ายเงิน', icon: '💳' },

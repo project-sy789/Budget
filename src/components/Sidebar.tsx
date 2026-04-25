@@ -6,6 +6,7 @@ interface Props { onLogout: () => void; overdueCount: number }
 
 const navItems = [
   { path: '/', label: 'ภาพรวม', icon: '🏠', section: 'หลัก' },
+  { path: '/agents', label: 'คุมสายส่ง', icon: '🤝', section: 'หลัก' },
   { path: '/loans', label: 'รายการสินเชื่อ', icon: '📋', section: 'หลัก' },
   { path: '/add-loan', label: 'เพิ่มสินเชื่อใหม่', icon: '➕', section: 'หลัก' },
   { path: '/payments', label: 'บันทึกการชำระ', icon: '💳', section: 'การเงิน' },

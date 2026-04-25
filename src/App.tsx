@@ -9,6 +9,7 @@ import LoanDetail from './pages/LoanDetail'
 import AddLoan from './pages/AddLoan'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
+import AgentDashboard from './pages/AgentDashboard'
 import Sidebar from './components/Sidebar'
 import MobileNav from './components/MobileNav'
 import './index.css'
@@ -47,6 +48,7 @@ export default function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/agents" element={<AgentDashboard />} />
             <Route path="/loans" element={<Loans />} />
             <Route path="/loans/:id" element={<LoanDetail />} />
             <Route path="/add-loan" element={<AddLoan />} />

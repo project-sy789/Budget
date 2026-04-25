@@ -41,6 +41,7 @@ interface FormData {
   collateral: string
   guarantor_name: string
   notes: string
+  agent_name: string
   include_first_day: boolean
 }
 
@@ -49,6 +50,7 @@ const defaultForm: FormData = {
   loan_type: 'daily', principal: '', interest_rate: '', interest_period: 'daily',
   start_date: new Date().toISOString().slice(0, 10), due_date: '',
   installments: '', installment_amount: '', collateral: '', guarantor_name: '', notes: '',
+  agent_name: '',
   include_first_day: true
 }
 
@@ -87,6 +89,7 @@ export default function AddLoan() {
           collateral: loan.collateral || '',
           guarantor_name: loan.guarantor_name || '',
           notes: loan.notes || '',
+          agent_name: loan.agent_name || '',
           include_first_day: loan.include_first_day
         })
       }
@@ -326,10 +329,15 @@ export default function AddLoan() {
       start_date: form.start_date,
       due_date: form.due_date,
       installments: form.installments ? parseInt(form.installments) : null,
-      installment_amount: form.installment_amount ? parseFloat(form.installment_amount) : null,
+      installment_amount: form.installment_amount 
+        ? parseFloat(form.installment_amount) 
+        : (form.loan_type === 'daily' && preview) 
+          ? parseFloat(preview.summary.find((s: any) => s.label.includes('ยอดส่ง'))?.value.replace(/[^0-9.]/g, '') || '0')
+          : null,
       include_first_day: form.include_first_day,
       collateral: form.collateral,
       guarantor_name: form.guarantor_name,
+      agent_name: form.agent_name,
       notes: form.notes,
     }
 
@@ -415,6 +423,12 @@ export default function AddLoan() {
                   <input className="form-input" value={form.borrower_id_card} onChange={e => set('borrower_id_card', e.target.value)} placeholder="X-XXXX-XXXXX-XX-X" />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">สายส่ง (Agent)</label>
+                  <input className="form-input" value={form.agent_name} onChange={e => set('agent_name', e.target.value)} placeholder="ชื่อคนดูแลเคสนี้ (เช่น จูน)" />
+                </div>
+              </div>
+              <div className="form-grid-2">
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
                   <label className="form-label">ผู้ค้ำประกัน</label>
                   <input className="form-input" value={form.guarantor_name} onChange={e => set('guarantor_name', e.target.value)} placeholder="ชื่อผู้ค้ำ" />
                 </div>

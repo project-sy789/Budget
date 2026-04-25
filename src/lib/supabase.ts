@@ -28,6 +28,7 @@ export interface Loan {
   collateral: string
   guarantor_name: string
   status: 'active' | 'closed' | 'overdue' | 'restructured'
+  agent_name: string
   notes: string
   created_at: string
 }
