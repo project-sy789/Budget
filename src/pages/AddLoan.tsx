@@ -12,16 +12,17 @@ const LOAN_TYPES = [
   { value: 'daily', label: '📅 ดอกรายวัน', desc: 'คิดดอกเบี้ยรายวันบนยอดต้นคงเหลือ' },
   { value: 'weekly', label: '📆 ผ่อนรายอาทิตย์', desc: 'ผ่อนทุกอาทิตย์ ดอกคงที่' },
   { value: 'monthly', label: '🗓️ ผ่อนรายเดือน', desc: 'ผ่อนทุกเดือน ดอกคงที่' },
+  { value: 'yearly', label: '🏦 ดอกรายปี', desc: 'คิดดอกเบี้ยเป็นรายปี' },
   { value: 'upfront', label: '💸 ดอกหน้า', desc: 'หักดอกเบี้ยล่วงหน้าตอนรับเงิน' },
   { value: 'bullet', label: '💰 เงินก้อน+ดอก', desc: 'จ่ายทั้งหมดตอนครบกำหนด' },
   { value: 'reducing', label: '📉 ลดต้นลดดอก', desc: 'ดอกคิดจากยอดต้นคงเหลือ' },
 ]
 
 const PERIODS = [
-  { value: 'daily', label: '% ต่อวัน' },
-  { value: 'weekly', label: '% ต่ออาทิตย์' },
-  { value: 'monthly', label: '% ต่อเดือน' },
-  { value: 'yearly', label: '% ต่อปี' },
+  { value: 'daily', label: 'ต่อวัน' },
+  { value: 'weekly', label: 'ต่ออาทิตย์' },
+  { value: 'monthly', label: 'ต่อเดือน' },
+  { value: 'yearly', label: 'ต่อปี' },
 ]
 
 interface FormData {
@@ -70,6 +71,7 @@ export default function AddLoan() {
         if (val === 'daily') newForm.interest_period = 'daily'
         else if (val === 'weekly') newForm.interest_period = 'weekly'
         else if (val === 'monthly') newForm.interest_period = 'monthly'
+        else if (val === 'yearly') newForm.interest_period = 'yearly'
         else if (val === 'reducing') newForm.interest_period = 'monthly'
         else if (val === 'upfront') newForm.interest_period = 'daily'
         else if (val === 'bullet') newForm.interest_period = 'daily'
@@ -191,7 +193,8 @@ export default function AddLoan() {
     const rateFormatted = `${parseFloat(form.interest_rate).toFixed(2)}%`
 
     switch (form.loan_type) {
-      case 'daily': {
+      case 'daily':
+      case 'yearly': {
         const res = calcDailyFlat(p, r, period, daysToDate)
         const displayInstallment = form.installment_amount ? parseFloat(form.installment_amount) : res.dailyInterest
         return { summary: [
@@ -412,17 +415,9 @@ export default function AddLoan() {
                   {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
                   {interestMode !== 'percent' && (
                     <div className="form-hint-pill">
-                      ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label.replace('% ', '') || 'ต่อรอบ'}
+                      ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
                     </div>
                   )}
-                </div>
-                <div className="form-group">
-                  <div style={{ height: 36, display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>ระยะเวลาคิดดอก</label>
-                  </div>
-                  <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
-                    {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
                 </div>
               </div>
               <div className="form-row">
