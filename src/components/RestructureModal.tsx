@@ -22,34 +22,39 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
   const [newPrincipal, setNewPrincipal] = useState(loan.principal.toString())
   const [newType, setNewType] = useState(loan.loan_type)
   const [newRate, setNewRate] = useState(loan.interest_rate.toString())
-  const [newPeriod, setNewPeriod] = useState(loan.interest_period)
-  const [newInterestAmt, setNewInterestAmt] = useState(((loan.principal * loan.interest_rate) / 100).toString())
+  const [newInstallmentAmt, setNewInstallmentAmt] = useState(loan.installment_amount?.toString() || '1000')
+  const [newInstallments, setNewInstallments] = useState(loan.installments?.toString() || '24')
   
   const [saving, setSaving] = useState(false)
 
-  // Auto-calculate Rate from Amount
-  const handleInterestAmtChange = (amt: string) => {
-    setNewInterestAmt(amt)
-    const principal = parseFloat(newPrincipal) || 0
-    const interest = parseFloat(amt) || 0
-    if (principal > 0) {
-      const rate = (interest / principal) * 100
+  // Auto-calculate Rate from Installments
+  const calculateRateFromInstallments = (p: string, amt: string, count: string) => {
+    const principal = parseFloat(p) || 0
+    const installmentAmt = parseFloat(amt) || 0
+    const installments = parseInt(count) || 0
+    
+    if (principal > 0 && installmentAmt > 0 && installments > 0) {
+      const totalPayback = installmentAmt * installments
+      const totalInterest = totalPayback - principal
+      const rate = (totalInterest / principal) * 100
       setNewRate(rate.toFixed(2))
     }
-  }
-
-  // Auto-calculate Amount from Rate or Principal
-  const handleRateOrPrincipalChange = (p: string, r: string) => {
-    const principal = parseFloat(p) || 0
-    const rate = parseFloat(r) || 0
-    const interest = (principal * rate) / 100
-    setNewInterestAmt(interest.toFixed(2))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    // ... rest of the logic
+
+    const principal = parseFloat(newPrincipal) || 0
+    const installments = parseInt(newInstallments) || 0
+    const installmentAmt = parseFloat(newInstallmentAmt) || 0
+
+    // Calculate due date based on installments
+    const startDate = new Date(closingDate)
+    const dueDate = new Date(startDate)
+    if (newType === 'daily') dueDate.setDate(startDate.getDate() + installments)
+    if (newType === 'weekly') dueDate.setDate(startDate.getDate() + (installments * 7))
+    if (newType === 'monthly') dueDate.setMonth(startDate.getMonth() + installments)
 
     try {
       // 1. Close the current loan
@@ -70,7 +75,6 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
       await updateLoan(loan.id, { status: 'closed' })
 
       // 2. Create the new loan
-      const principal = parseFloat(newPrincipal) || 0
       if (principal > 0) {
         await addLoan({
           borrower_name: loan.borrower_name,
@@ -80,16 +84,16 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           agent_name: loan.agent_name,
           principal: principal,
           interest_rate: parseFloat(newRate) || 0,
-          interest_period: newPeriod as any,
+          interest_period: 'daily', // Always daily for this calculation style
           loan_type: newType as any,
           start_date: closingDate,
-          due_date: new Date(new Date(closingDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), // Default 30 days
+          due_date: dueDate.toISOString().slice(0, 10),
           status: 'active',
           collateral: loan.collateral,
           guarantor_name: loan.guarantor_name,
           include_first_day: true,
-          installments: null,
-          installment_amount: null,
+          installments: installments,
+          installment_amount: installmentAmt,
           notes: `ปรับโครงสร้างจากสัญญาเดิม #${loan.id.slice(0, 8)}`
         })
       }
@@ -126,9 +130,6 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                   <input className="form-input" type="number" step="0.01" value={closingAmount} onChange={e => setClosingAmount(e.target.value)} required />
                   <div className="form-hint">ยอดค้างรวม: {formatBaht(remainingPrincipal + accruedInterest)}</div>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  * เมื่อกดบันทึก สินเชื่อก้อนเดิมจะเปลี่ยนสถานะเป็น "ปิดบัญชี" ทันที
-                </div>
               </div>
 
               {/* Part 2: Open New Loan */}
@@ -143,53 +144,49 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                     value={newPrincipal} 
                     onChange={e => {
                       setNewPrincipal(e.target.value)
-                      handleRateOrPrincipalChange(e.target.value, newRate)
+                      calculateRateFromInstallments(e.target.value, newInstallmentAmt, newInstallments)
                     }} 
                     required 
                   />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">ยอดดอกเบี้ย (บาท)</label>
+                    <label className="form-label">ยอดส่ง (บาท/วัน)</label>
                     <input 
                       className="form-input" 
                       type="number" 
                       step="0.01" 
-                      value={newInterestAmt} 
-                      onChange={e => handleInterestAmtChange(e.target.value)} 
-                      placeholder="เช่น 1000"
+                      value={newInstallmentAmt} 
+                      onChange={e => {
+                        setNewInstallmentAmt(e.target.value)
+                        calculateRateFromInstallments(newPrincipal, e.target.value, newInstallments)
+                      }} 
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">ดอกเบี้ย (%)</label>
+                    <label className="form-label">จำนวนวัน (งวด)</label>
                     <input 
                       className="form-input" 
                       type="number" 
-                      step="0.01"
-                      value={newRate} 
+                      value={newInstallments} 
                       onChange={e => {
-                        setNewRate(e.target.value)
-                        handleRateOrPrincipalChange(newPrincipal, e.target.value)
+                        setNewInstallments(e.target.value)
+                        calculateRateFromInstallments(newPrincipal, newInstallmentAmt, e.target.value)
                       }} 
                     />
                   </div>
                 </div>
                 <div className="form-row">
                   <div className="form-group">
+                    <label className="form-label">ดอกเบี้ยคำนวณได้ (%)</label>
+                    <input className="form-input" type="number" value={newRate} readOnly style={{ background: 'var(--bg-secondary)', opacity: 0.8 }} />
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">ประเภท</label>
                     <select className="form-select" value={newType} onChange={e => setNewType(e.target.value as any)}>
                       <option value="daily">รายวัน (Flat)</option>
                       <option value="weekly">รายอาทิตย์</option>
                       <option value="monthly">รายเดือน</option>
-                      <option value="upfront">หักดอกก่อน (Upfront)</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">รอบดอกเบี้ย</label>
-                    <select className="form-select" value={newPeriod} onChange={e => setNewPeriod(e.target.value as any)}>
-                      <option value="daily">ต่อวัน</option>
-                      <option value="weekly">ต่ออาทิตย์</option>
-                      <option value="monthly">ต่อเดือน</option>
                     </select>
                   </div>
                 </div>
