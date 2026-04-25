@@ -6,12 +6,14 @@ import { calcDailyFlat, calcRemainingBalance } from '../lib/calculations'
 import { differenceInDays, parseISO } from 'date-fns'
 import PaymentModal from '../components/PaymentModal'
 import DailyCheckin from '../components/DailyCheckin'
+import RestructureModal from '../components/RestructureModal'
 
 export default function LoanDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { loans, payments, fetchLoans, fetchPayments, updateLoan, deletePayment } = useStore()
   const [showPayModal, setShowPayModal] = useState(false)
+  const [showRestructureModal, setShowRestructureModal] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [activeTab, setActiveTab] = useState<'info' | 'payments' | 'checkin' | 'calc'>('checkin')
 
@@ -76,6 +78,12 @@ export default function LoanDetail() {
             <p style={{ fontSize: '0.9rem' }}>{loan.borrower_phone} {loan.borrower_address && `· ${loan.borrower_address}`}</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => setShowRestructureModal(true)} 
+              className="btn btn-secondary"
+            >
+              🔄 ปรับโครงสร้าง/เปิดใหม่
+            </button>
             <button 
               onClick={() => {
                 setIsClosing(true)
@@ -267,6 +275,19 @@ export default function LoanDetail() {
             setIsClosing(false)
             fetchPayments(id)
             fetchLoans() // Refresh to see the new status
+          }}
+        />
+      )}
+      {showRestructureModal && loan && (
+        <RestructureModal
+          loan={loan}
+          accruedInterest={outstandingInterest}
+          remainingPrincipal={remaining}
+          onClose={() => setShowRestructureModal(false)}
+          onSaved={() => {
+            setShowRestructureModal(false)
+            fetchLoans()
+            navigate('/agents')
           }}
         />
       )}
