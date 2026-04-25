@@ -12,6 +12,7 @@ export default function LoanDetail() {
   const navigate = useNavigate()
   const { loans, payments, fetchLoans, fetchPayments, updateLoan, deletePayment } = useStore()
   const [showPayModal, setShowPayModal] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
   const [activeTab, setActiveTab] = useState<'info' | 'payments' | 'checkin' | 'calc'>('checkin')
 
   const loan = useMemo(() => loans.find(l => l.id === id), [loans, id])
@@ -68,7 +69,24 @@ export default function LoanDetail() {
             <p style={{ fontSize: '0.9rem' }}>{loan.borrower_phone} {loan.borrower_address && `· ${loan.borrower_address}`}</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={() => setShowPayModal(true)} className="btn btn-primary">💳 บันทึกชำระ</button>
+            <button 
+              onClick={() => {
+                setIsClosing(true)
+                setShowPayModal(true)
+              }} 
+              className="btn btn-success"
+            >
+              🏁 ปิดยอดก่อน
+            </button>
+            <button 
+              onClick={() => {
+                setIsClosing(false)
+                setShowPayModal(true)
+              }} 
+              className="btn btn-primary"
+            >
+              💳 บันทึกชำระ
+            </button>
             <select className="form-select" style={{ width: 160 }} value={loan.status} onChange={e => handleStatusChange(e.target.value)}>
               <option value="active">กำลังดำเนินการ</option>
               <option value="closed">ปิดบัญชี</option>
@@ -232,8 +250,17 @@ export default function LoanDetail() {
           loan={loan}
           accruedInterest={outstandingInterest}
           remainingPrincipal={remaining}
-          onClose={() => setShowPayModal(false)}
-          onSaved={() => { setShowPayModal(false); fetchPayments(id) }}
+          isClosing={isClosing}
+          onClose={() => {
+            setShowPayModal(false)
+            setIsClosing(false)
+          }}
+          onSaved={() => {
+            setShowPayModal(false)
+            setIsClosing(false)
+            fetchPayments(id)
+            fetchLoans() // Refresh to see the new status
+          }}
         />
       )}
     </div>

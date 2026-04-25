@@ -9,17 +9,19 @@ interface Props {
   remainingPrincipal: number
   onClose: () => void
   onSaved: () => void
+  isClosing?: boolean
 }
 
-export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved }: Props) {
-  const { addPayment } = useStore()
-  const [amount, setAmount] = useState('')
-  const [interestPaid, setInterestPaid] = useState('0.00')
-  const [principalPaid, setPrincipalPaid] = useState('0.00')
+export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved, isClosing }: Props) {
+  const { addPayment, updateLoan } = useStore()
+  const initialAmt = isClosing ? (remainingPrincipal + accruedInterest) : ''
+  const [amount, setAmount] = useState(initialAmt.toString())
+  const [interestPaid, setInterestPaid] = useState(isClosing ? accruedInterest.toFixed(2) : '0.00')
+  const [principalPaid, setPrincipalPaid] = useState(isClosing ? remainingPrincipal.toFixed(2) : '0.00')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [method, setMethod] = useState('cash')
   const [receiptNo, setReceiptNo] = useState('')
-  const [notes, setNotes] = useState('')
+  const [notes, setNotes] = useState(isClosing ? 'ปิดยอดก่อนกำหนด' : '')
   const [saving, setSaving] = useState(false)
 
   const amt = parseFloat(amount) || 0
@@ -51,6 +53,11 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
       receipt_no: receiptNo,
       notes,
     })
+
+    if (isClosing) {
+      await updateLoan(loan.id, { status: 'closed' })
+    }
+
     setSaving(false)
     onSaved()
   }
@@ -59,15 +66,21 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal fade-in">
         <div className="modal-header">
-          <h3>💳 บันทึกการชำระ — {loan.borrower_name}</h3>
+          <h3>{isClosing ? '🏁 ปิดบัญชีสินเชื่อ' : '💳 บันทึกการชำระ'} — {loan.borrower_name}</h3>
           <button className="btn btn-secondary btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {accruedInterest > 0 && (
-              <div className="alert alert-warning">
-                ⚠️ ดอกเบี้ยค้างรับ: <strong>{formatBaht(accruedInterest)}</strong>
+            {isClosing ? (
+              <div className="alert alert-success">
+                ✨ <strong>โหมดปิดยอดก่อนกำหนด:</strong> ระบบคำนวณยอดรวมที่ต้องจ่ายทั้งหมดให้แล้ว
               </div>
+            ) : (
+              accruedInterest > 0 && (
+                <div className="alert alert-warning">
+                  ⚠️ ดอกเบี้ยค้างรับ: <strong>{formatBaht(accruedInterest)}</strong>
+                </div>
+              )
             )}
             <div className="form-row stack-on-ipad">
               <div className="form-group">
@@ -84,7 +97,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">ยอดรับเงิน (บาท) <span className="required">*</span></label>
+              <label className="form-label">{isClosing ? 'ยอดปิดบัญชีสุทธิ (บาท)' : 'ยอดรับเงิน (บาท)'} <span className="required">*</span></label>
               <input
                 id="payment-amount"
                 className="form-input"
@@ -140,7 +153,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>ยกเลิก</button>
             <button id="save-payment-btn" type="submit" className="btn btn-primary" disabled={saving || !amount}>
-              {saving ? <><span className="spinner" /> บันทึก...</> : '💾 บันทึกการชำระ'}
+              {saving ? <><span className="spinner" /> กำลังบันทึก...</> : (isClosing ? '🏁 บันทึกและปิดบัญชี' : '💾 บันทึกการชำระ')}
             </button>
           </div>
         </form>
