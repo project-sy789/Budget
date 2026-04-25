@@ -41,6 +41,10 @@ export default function Dashboard() {
     const todayPayments = payments.filter(p => p.payment_date === todayStr)
     const todayRealizedInterest = todayPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
 
+    const now = new Date()
+    const monthStart = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd')
+    const yearStart = format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd')
+
     const monthPayments = payments.filter(p => p.payment_date >= monthStart)
     const monthInterest = monthPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
     const monthPrincipal = monthPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
