@@ -113,7 +113,7 @@ export const useStore = create<AppState>((set) => ({
       borrower_phone: oldLoan.borrower_phone,
       borrower_address: oldLoan.borrower_address,
       borrower_id_card: oldLoan.borrower_id_card,
-      agent_id: oldLoan.agent_id,
+      agent_name: oldLoan.agent_name,
       principal: data.new_principal,
       loan_type: data.new_loan_type as any,
       interest_rate: data.new_interest_rate,
