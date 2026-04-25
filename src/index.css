@@ -823,17 +823,58 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 /* Ensure date inputs are legible */
 input[type="date"].form-input {
   min-height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
   font-size: 1rem;
+  line-height: 1.5;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--bg-input);
+  background-image: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  transition: all 0.2s;
 }
 
 /* Fix iPad/iOS date input appearance */
 @supports (-webkit-overflow-scrolling: touch) {
   input[type="date"].form-input {
-    appearance: none;
     -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+  }
+
+  /* Ensure the date picker icon is visible on iOS/iPad */
+  input[type="date"].form-input::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5em;
+  }
+
+  /* Style the calendar icon on iOS/iPad */
+  input[type="date"].form-input::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    opacity: 1;
+  }
+}
+
+/* Additional iPad-specific fixes */
+@media (max-width: 1024px) {
+  input[type="date"].form-input {
+    min-height: 52px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px;
   }
 }
 
