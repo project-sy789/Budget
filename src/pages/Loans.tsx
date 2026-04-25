@@ -97,7 +97,22 @@ export default function Loans() {
               <tbody>
                 {filtered.map(loan => {
                   const overdueByDate = isOverdue(loan.due_date)
-                  const isActuallyOverdue = loan.status === 'overdue' || (loan.status === 'active' && overdueByDate)
+                  
+                  // Check if missed daily payment yesterday
+                  let missedYesterday = false
+                  if (loan.status === 'active' && loan.loan_type === 'daily') {
+                    const yesterday = new Date()
+                    yesterday.setDate(yesterday.getDate() - 1)
+                    const yesterdayStr = yesterday.toISOString().slice(0, 10)
+                    
+                    // If start_date is older than yesterday, we expect a payment
+                    if (loan.start_date <= yesterdayStr) {
+                      const hasPaidYesterday = payments.some(p => p.loan_id === loan.id && p.payment_date === yesterdayStr)
+                      if (!hasPaidYesterday) missedYesterday = true
+                    }
+                  }
+
+                  const isActuallyOverdue = loan.status === 'overdue' || (loan.status === 'active' && (overdueByDate || missedYesterday))
                   const rowClass = isActuallyOverdue ? 'row-overdue' : loan.status === 'closed' ? 'row-closed' : loan.status === 'restructured' ? 'row-restructured' : ''
                   
                   return (
