@@ -130,55 +130,75 @@ export default function AddLoan() {
       ? Math.max(1, Math.ceil((new Date(form.due_date).getTime() - new Date(start).getTime()) / 86400000))
       : 30
 
+    const periodLabel = PERIODS.find(px => px.value === period)?.label.replace('% ต่อ', '') || 'วัน'
+    const rateFormatted = `${parseFloat(form.interest_rate).toFixed(2)}%`
+
     switch (form.loan_type) {
       case 'daily': {
         const res = calcDailyFlat(p, r, period, daysToDate)
         return { summary: [
-          { label: 'ดอกเบี้ยต่อวัน', value: formatBaht(res.dailyInterest) },
-          { label: `ดอกเบี้ยรวม (${daysToDate} วัน)`, value: formatBaht(res.totalInterest) },
-          { label: 'ยอดรวมทั้งหมด', value: formatBaht(res.totalRepay) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `อัตราดอกเบี้ย (${periodLabel})`, value: rateFormatted },
+          { label: `ดอกเบี้ยต่อ${periodLabel}`, value: formatBaht(res.dailyInterest) },
+          { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
+          { label: `ดอกเบี้ยรวมทั้งหมด`, value: formatBaht(res.totalInterest) },
+          { label: 'ยอดรวมที่ต้องได้รับ', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
       }
       case 'upfront': {
         const res = calcUpfront(p, r, period, daysToDate)
         return { summary: [
-          { label: 'ดอกหักล่วงหน้า', value: formatBaht(res.upfrontInterest) },
-          { label: 'ผู้กู้รับจริง', value: formatBaht(res.received) },
-          { label: 'ยอดที่ต้องคืน', value: formatBaht(res.totalRepay) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `ดอกเบี้ยหักล่วงหน้า`, value: formatBaht(res.upfrontInterest) },
+          { label: 'ผู้กู้รับเงินจริง', value: formatBaht(res.received), isHighlight: true },
+          { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
+          { label: 'ยอดที่ต้องคืน (ต้น)', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
       }
       case 'bullet': {
         const res = calcBullet(p, r, period, daysToDate)
         return { summary: [
-          { label: `ดอกเบี้ยรวม (${daysToDate} วัน)`, value: formatBaht(res.totalInterest) },
-          { label: 'ยอดจ่ายตอนครบกำหนด', value: formatBaht(res.totalRepay) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `ดอกเบี้ยต่อ${periodLabel}`, value: formatBaht(p * (r/100)) },
+          { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
+          { label: `ดอกเบี้ยรวม (จ่ายตอนจบ)`, value: formatBaht(res.totalInterest) },
+          { label: 'ยอดจ่ายรวมตอนครบกำหนด', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
       }
       case 'weekly': {
         const rows = calcWeeklyInstallment(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
         return { summary: [
-          { label: 'จ่ายต่อครั้ง', value: formatBaht(rows[0]?.payment || 0) },
-          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `อัตราดอกเบี้ยต่อสัปดาห์`, value: rateFormatted },
+          { label: 'ยอดผ่อนต่องวด', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
+          { label: `จำนวนงวดทั้งหมด`, value: `${inst} งวด (รายสัปดาห์)` },
           { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+          { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
       }
       case 'monthly': {
         const rows = calcMonthlyInstallment(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
         return { summary: [
-          { label: 'จ่ายต่อครั้ง', value: formatBaht(rows[0]?.payment || 0) },
-          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `อัตราดอกเบี้ยต่อเดือน`, value: rateFormatted },
+          { label: 'ยอดผ่อนต่องวด', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
+          { label: `จำนวนงวดทั้งหมด`, value: `${inst} งวด (รายเดือน)` },
           { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+          { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
       }
       case 'reducing': {
         const rows = calcReducing(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
         return { summary: [
-          { label: 'งวดแรก', value: formatBaht(rows[0]?.payment || 0) },
-          { label: `รวม ${inst} งวด`, value: formatBaht(total) },
-          { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `อัตราดอกเบี้ยต่อปี`, value: rateFormatted },
+          { label: 'ยอดผ่อนงวดแรก (ประมาณ)', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
+          { label: `จำนวนงวดทั้งหมด`, value: `${inst} งวด (ลดต้นลดดอก)` },
+          { label: 'ดอกเบี้ยรวมโดยประมาณ', value: formatBaht(total - p) },
+          { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
       }
       default: return null
@@ -397,10 +417,10 @@ export default function AddLoan() {
                 </div>
               ) : (
                 <>
-                  {preview.summary.map((s, i) => (
-                    <div key={i} className="receipt-row">
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.label}</span>
-                      <span style={{ fontWeight: 700, color: i === preview.summary.length - 1 ? 'var(--gold)' : 'var(--text-primary)' }}>{s.value}</span>
+                  {preview.summary.map((s: any, i) => (
+                    <div key={i} className={s.isTotal ? 'receipt-total' : 'receipt-row'} style={s.isHighlight ? { borderLeft: '3px solid var(--gold)', paddingLeft: 10, background: 'var(--gold-glow)', margin: '4px -10px', borderRadius: '0 4px 4px 0' } : {}}>
+                      <span style={{ color: s.isTotal || s.isHighlight ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.label}</span>
+                      <span style={{ fontWeight: 700, color: s.isTotal ? 'var(--gold)' : 'var(--text-primary)' }}>{s.value}</span>
                     </div>
                   ))}
                   {preview.rows && preview.rows.length > 0 && (
