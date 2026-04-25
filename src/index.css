@@ -1220,7 +1220,7 @@ input[type="date"].form-input {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   z-index: 1000;
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: content-box;
@@ -1233,7 +1233,7 @@ input[type="date"].form-input {
   justify-content: center;
   text-decoration: none;
   color: var(--text-muted);
-  gap: 4px;
+  gap: 3px;
   transition: all 0.2s ease;
 }
 
@@ -1242,11 +1242,11 @@ input[type="date"].form-input {
 }
 
 .mobile-nav-icon {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 .mobile-nav-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 500;
 }
 

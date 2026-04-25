@@ -89,16 +89,21 @@ export default function AgentDashboard() {
     text += `.........................................\n\n`
 
     agentLoans.forEach((loan, idx) => {
-      const todayStr = format(new Date(), 'yyyy-MM-dd')
-      const hasPaid = payments.some(p => p.loan_id === loan.id && p.payment_date === todayStr)
+      const todayStrYmd = format(new Date(), 'yyyy-MM-dd')
+      const hasPaid = payments.some(p => p.loan_id === loan.id && p.payment_date === todayStrYmd)
       const dailyAmt = loan.installment_amount || 0
       
+      const loanDate = new Date(loan.start_date)
+      const dateStr = format(loanDate, 'd เมษายน', { locale: th })
+      const yearTh = (loanDate.getFullYear() + 543).toString()
+
       text += `${idx + 1}. ${loan.borrower_name}\n`
-      text += `🌳ต้น ${loan.principal.toLocaleString()}🌳 ${hasPaid ? '✅' : '📍'}\n`
-      text += `🌼${dailyAmt.toLocaleString()}/วัน🌼\n\n`
+      text += `🌳ต้น ${loan.principal.toLocaleString()}🌳  ${dateStr}\n`
+      text += `                            พ.ศ. ${yearTh}\n\n`
+      text += `  🌼${dailyAmt.toLocaleString()}/วัน🌼 ${hasPaid ? '✅' : '📍'}\n`
+      text += `.........................................\n\n`
     })
 
-    text += `.........................................\n`
     text += `💰 ยอดโอนรวมวันนี้: ${formatBaht(dailyStats.totalReceived)}\n`
     text += `🕑 ยืนยันรับยอดแล้ว ณ เวลา ${format(new Date(), 'HH.mm')} น.`
 
