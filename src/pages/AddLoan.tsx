@@ -231,14 +231,19 @@ export default function AddLoan() {
       case 'daily':
       case 'yearly': {
         const res = calcDailyFlat(p, r, period, daysToDate)
+        // If user manually set installment amount, the total repayment is (installment * days)
+        // Otherwise, it is (principal + interest)
         const displayInstallment = form.installment_amount ? parseFloat(form.installment_amount) : res.dailyInterest
+        const actualTotalRepay = form.installment_amount ? (displayInstallment * daysToDate) : res.totalRepay
+        const actualTotalInterest = actualTotalRepay - p
+
         return { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ย (${periodLabel})`, value: rateFormatted },
           { label: `ยอดส่งต่อ${periodLabel}`, value: formatBaht(displayInstallment), isHighlight: true },
           { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
-          { label: `ดอกเบี้ยรวมทั้งหมด`, value: formatBaht(res.totalInterest) },
-          { label: 'ยอดรวมที่ต้องได้รับ', value: formatBaht(res.totalRepay), isTotal: true },
+          { label: `ดอกเบี้ยรวมทั้งหมด`, value: formatBaht(actualTotalInterest) },
+          { label: 'ยอดรวมที่ต้องได้รับ', value: formatBaht(actualTotalRepay), isTotal: true },
         ], rows: null }
       }
       case 'upfront': {
