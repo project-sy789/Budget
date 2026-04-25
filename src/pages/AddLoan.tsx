@@ -321,8 +321,13 @@ export default function AddLoan() {
           {/* Main Form Section */}
           <form onSubmit={handleSubmit}>
             {/* Loan Type Section */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="section-title">ประเภทการปล่อยกู้</div>
+            <div className="card-section">
+              <div className="section-header">
+                <div>
+                  <div className="section-title-main">📋 ประเภทการปล่อยกู้</div>
+                  <div className="section-subtitle">เลือกประเภทสินเชื่อที่ต้องการ</div>
+                </div>
+              </div>
               <div className="loan-type-grid">
                 {LOAN_TYPES.map(t => (
                   <button
@@ -330,7 +335,6 @@ export default function AddLoan() {
                     type="button"
                     onClick={() => {
                       set('loan_type', t.value)
-                      // Auto-set matching interest period
                       if (['daily', 'weekly', 'monthly', 'yearly'].includes(t.value)) {
                         set('interest_period', t.value)
                       } else if (t.value === 'upfront' || t.value === 'bullet' || t.value === 'reducing') {
@@ -347,9 +351,14 @@ export default function AddLoan() {
             </div>
 
             {/* Borrower Section */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="section-title">ข้อมูลผู้กู้</div>
-              <div className="form-row">
+            <div className="card-section">
+              <div className="section-header">
+                <div>
+                  <div className="section-title-main">👤 ข้อมูลผู้กู้</div>
+                  <div className="section-subtitle">กรอกข้อมูลผู้กู้และผู้ค้ำประกัน</div>
+                </div>
+              </div>
+              <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">ชื่อ-นามสกุล <span className="required">*</span></label>
                   <input id="borrower-name" className="form-input" value={form.borrower_name} onChange={e => set('borrower_name', e.target.value)} placeholder="ชื่อผู้กู้" />
@@ -360,7 +369,7 @@ export default function AddLoan() {
                   <input className="form-input" value={form.borrower_phone} onChange={e => set('borrower_phone', e.target.value)} placeholder="08X-XXX-XXXX" />
                 </div>
               </div>
-              <div className="form-row">
+              <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">เลขบัตรประชาชน</label>
                   <input className="form-input" value={form.borrower_id_card} onChange={e => set('borrower_id_card', e.target.value)} placeholder="X-XXXX-XXXXX-XX-X" />
@@ -377,8 +386,13 @@ export default function AddLoan() {
             </div>
 
             {/* Loan Details Section */}
-            <div className="card" style={{ marginBottom: 20 }}>
-              <div className="section-title">📊 รายละเอียดสินเชื่อ</div>
+            <div className="card-section">
+              <div className="section-header">
+                <div>
+                  <div className="section-title-main">💰 รายละเอียดสินเชื่อ</div>
+                  <div className="section-subtitle">กำหนดเงื่อนไขการปล่อยกู้</div>
+                </div>
+              </div>
               
               <div className="form-grid-2">
                 <div className="form-group">
@@ -469,19 +483,21 @@ export default function AddLoan() {
               {needsInstallments && (
                 <div className="form-group" style={{ marginTop: 20 }}>
                   <label className="form-label">จำนวนงวด</label>
-                  <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" />
+                  <input className="form-input" type="number" value={form.installments} onChange={e => set('installments', e.target.value)} min="1" max="360" placeholder="จำนวนงวดที่ต้องการผ่อน" />
                 </div>
               )}
 
               <div className="form-group" style={{ marginTop: 20 }}>
                 <label className="form-label">หมายเหตุ</label>
-                <textarea className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม" style={{ minHeight: 80 }} />
+                <textarea className="form-input" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)" style={{ minHeight: 80 }} />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 30, justifyContent: 'center' }}>
-              <button type="button" className="btn btn-secondary btn-lg" style={{ minWidth: 160 }} onClick={() => navigate('/loans')}>ยกเลิก</button>
-              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ minWidth: 200 }} disabled={saving}>
+            <div className="action-buttons">
+              <button type="button" className="btn btn-secondary btn-lg" style={{ minWidth: 140 }} onClick={() => navigate('/loans')}>
+                ยกเลิก
+              </button>
+              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ minWidth: 180 }} disabled={saving}>
                 {saving ? <><span className="spinner" /> กำลังบันทึก...</> : '💾 บันทึกสินเชื่อ'}
               </button>
             </div>
@@ -489,12 +505,18 @@ export default function AddLoan() {
 
           {/* Preview Panel Section */}
           <div className="summary-sidebar">
-            <div className="card sticky-summary">
-              <div className="section-title">📊 ตัวอย่างการคำนวณ</div>
+            <div className="card-section sticky-summary">
+              <div className="section-header" style={{ marginBottom: 16, paddingBottom: 12 }}>
+                <div>
+                  <div className="section-title-main">📊 ตัวอย่างการคำนวณ</div>
+                  <div className="section-subtitle">ดูผลการคำนวณแบบเรียลไทม์</div>
+                </div>
+              </div>
               {!preview ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 12 }}>📊</div>
-                  กรอกข้อมูลเงินต้นและดอกเบี้ย<br />เพื่อดูตัวอย่าง
+                  <div style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }}>📊</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>กรอกข้อมูลเงินต้นและดอกเบี้ย</div>
+                  <div style={{ fontSize: '0.8rem' }}>เพื่อดูตัวอย่างการคำนวณ</div>
                 </div>
               ) : (
                 <>
@@ -520,7 +542,7 @@ export default function AddLoan() {
                         ))}
                         {preview.rows.length > 5 && (
                           <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                            ... และอีก {preview.rows.length - 5} งวด ...
+                            ... และอีก {preview.rows.length - 5} งวด
                           </div>
                         )}
                       </div>

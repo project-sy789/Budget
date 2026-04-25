@@ -56,18 +56,18 @@ export default function LoanDetail() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <button onClick={() => navigate('/loans')} className="btn btn-secondary btn-sm">← กลับ</button>
               <span className={`badge ${loanTypeBadgeClass(loan.loan_type)}`}>{loanTypeLabel(loan.loan_type)}</span>
               <span className={`badge ${statusBadgeClass(loan.status)}`}>{statusLabel(loan.status)}</span>
               {overdue && <span className="badge badge-danger">⚠️ เกินกำหนด</span>}
             </div>
-            <h2>{loan.borrower_name}</h2>
-            <p>{loan.borrower_phone} {loan.borrower_address && `· ${loan.borrower_address}`}</p>
+            <h2 style={{ marginBottom: 4 }}>{loan.borrower_name}</h2>
+            <p style={{ fontSize: '0.9rem' }}>{loan.borrower_phone} {loan.borrower_address && `· ${loan.borrower_address}`}</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={() => setShowPayModal(true)} className="btn btn-primary">💳 บันทึกชำระ</button>
             <select className="form-select" style={{ width: 160 }} value={loan.status} onChange={e => handleStatusChange(e.target.value)}>
               <option value="active">กำลังดำเนินการ</option>
@@ -80,20 +80,20 @@ export default function LoanDetail() {
       </div>
       <div className="page-content">
         {/* Financial Summary */}
-        <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginBottom: 20 }}>
+        <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 24 }}>
           <div className="kpi-card gold">
             <div className="kpi-label">เงินต้น</div>
-            <div className="kpi-value gold" style={{ fontSize: '1.2rem' }}>{formatBaht(loan.principal)}</div>
+            <div className="kpi-value gold" style={{ fontSize: '1.3rem' }}>{formatBaht(loan.principal)}</div>
             <div className="kpi-sub">{loan.interest_rate}% / {loan.interest_period === 'daily' ? 'วัน' : loan.interest_period === 'weekly' ? 'อาทิตย์' : 'เดือน'}</div>
           </div>
           <div className="kpi-card success">
             <div className="kpi-label">คืนต้นแล้ว</div>
-            <div className="kpi-value success" style={{ fontSize: '1.2rem' }}>{formatBaht(paidPrincipal)}</div>
+            <div className="kpi-value success" style={{ fontSize: '1.3rem' }}>{formatBaht(paidPrincipal)}</div>
             <div className="kpi-sub">คงเหลือ {formatBaht(remaining)}</div>
           </div>
           <div className="kpi-card info">
             <div className="kpi-label">ดอกเบี้ยสะสม</div>
-            <div className="kpi-value" style={{ fontSize: '1.2rem', color: 'var(--info)' }}>{formatBaht(accruedInterest)}</div>
+            <div className="kpi-value" style={{ fontSize: '1.3rem', color: 'var(--info)' }}>{formatBaht(accruedInterest)}</div>
             <div className="kpi-sub">{daysElapsed} วันที่ผ่านมา</div>
           </div>
           <div className="kpi-card success">
