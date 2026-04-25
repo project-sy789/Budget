@@ -97,19 +97,50 @@ export default function Reports() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2>📊 รายงาน</h2>
-            <p>สรุปรายรับดอกเบี้ยและเงินต้น</p>
+            <h2>📊 รายงานและสถิติ</h2>
+            <p>วิเคราะห์ข้อมูลรายรับและประสิทธิภาพพอร์ต</p>
           </div>
-          <button onClick={exportCSV} className="btn btn-secondary">📥 Export CSV</button>
+          <button onClick={exportCSV} className="btn btn-secondary">📥 ส่งออก CSV</button>
         </div>
       </div>
       <div className="page-content">
+        {/* Summary Cards */}
+        {tab === 'daily' && (
+          <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
+            <div className="kpi-card gold">
+              <div className="kpi-label">ดอกเบี้ยรับ ({format(new Date(selectedMonth), 'MMM yyyy', { locale: th })})</div>
+              <div className="kpi-value gold">{formatBaht(monthTotals.interest)}</div>
+              <div className="kpi-sub">จาก {monthTotals.count} รายการ</div>
+              <div className="kpi-icon">💰</div>
+            </div>
+            <div className="kpi-card success">
+              <div className="kpi-label">คืนต้น</div>
+              <div className="kpi-value success">{formatBaht(monthTotals.principal)}</div>
+              <div className="kpi-sub">เงินต้นที่รับคืน</div>
+              <div className="kpi-icon">📥</div>
+            </div>
+            <div className="kpi-card info">
+              <div className="kpi-label">ยอดรับรวม</div>
+              <div className="kpi-value" style={{ color: 'var(--info)' }}>{formatBaht(monthTotals.total)}</div>
+              <div className="kpi-sub">ดอก + ต้น</div>
+              <div className="kpi-icon">💵</div>
+            </div>
+            <div className="kpi-card purple">
+              <div className="kpi-label">จำนวนรายการ</div>
+              <div className="kpi-value" style={{ color: 'var(--purple)' }}>{monthTotals.count}</div>
+              <div className="kpi-sub">ทั้งหมด</div>
+              <div className="kpi-icon">📋</div>
+            </div>
+          </div>
+        )}
+
         {/* Tab & Controls */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="tabs" style={{ marginBottom: 0, border: 'none' }}>
-            {(['daily', 'monthly', 'yearly'] as const).map(t => (
+        <div className="card-section" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div className="tabs" style={{ marginBottom: 0, border: 'none' }}>
+              {(['daily', 'monthly', 'yearly'] as const).map(t => (
               <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
                 {t === 'daily' ? '📅 รายวัน' : t === 'monthly' ? '🗓️ รายเดือน' : '📆 รายปี'}
               </button>
@@ -124,10 +155,11 @@ export default function Reports() {
               onChange={e => setSelectedMonth(e.target.value)}
             />
           )}
+          </div>
         </div>
 
-        {/* Month Summary Cards */}
-        {tab === 'daily' && (
+        {/* Month Summary Cards - Remove duplicate */}
+        {tab === 'daily' && false && (
           <div className="stats-row" style={{ marginBottom: 20 }}>
             <div className="stat-item">
               <div className="stat-value">{formatBaht(monthTotals.interest)}</div>
@@ -149,11 +181,16 @@ export default function Reports() {
         )}
 
         {/* Bar Chart */}
-        <div className="chart-wrap" style={{ marginBottom: 20 }}>
-          <div className="chart-title">
-            {tab === 'daily' ? `รายรับ ${format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: th })}` : tab === 'monthly' ? 'รายรับ 12 เดือนล่าสุด' : 'รายรับรายปี'}
+        <div className="card-section" style={{ marginBottom: 20 }}>
+          <div className="section-header">
+            <div>
+              <div className="section-title-main">
+                {tab === 'daily' ? `📊 รายรับ ${format(new Date(selectedMonth + '-01'), 'MMMM yyyy', { locale: th })}` : tab === 'monthly' ? '📊 รายรับ 12 เดือนล่าสุด' : '📊 รายรับรายปี'}
+              </div>
+              <div className="section-subtitle">เปรียบเทียบดอกเบี้ยและเงินต้นที่รับคืน</div>
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={280}>
             <BarChart data={chartData} barSize={tab === 'daily' ? 10 : 20} barGap={3}>
               <XAxis dataKey={xKey} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
@@ -166,10 +203,16 @@ export default function Reports() {
         </div>
 
         {/* Payments Table */}
-        <div className="card">
-          <div className="section-title">รายการชำระทั้งหมด</div>
+        <div className="card-section">
+          <div className="section-header">
+            <div>
+              <div className="section-title-main">📋 รายการชำระทั้งหมด</div>
+              <div className="section-subtitle">แสดง 50 รายการล่าสุด</div>
+            </div>
+          </div>
           {payments.length === 0 ? (
-            <div className="empty-state" style={{ padding: 30 }}>
+            <div className="empty-state" style={{ padding: 40 }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8, opacity: 0.3 }}>💳</div>
               <div>ยังไม่มีรายการชำระ</div>
             </div>
           ) : (

@@ -33,42 +33,44 @@ export default function Loans() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h2>📋 รายการสินเชื่อทั้งหมด</h2>
-            <p>พบ {filtered.length} รายการ</p>
+            <p>พบ {filtered.length} รายการจากทั้งหมด {loans.length} รายการ</p>
           </div>
           <Link to="/add-loan" className="btn btn-primary">➕ เพิ่มสินเชื่อใหม่</Link>
         </div>
       </div>
       <div className="page-content">
         {/* Search & Filters */}
-        <div className="search-bar">
-          <div className="search-input-wrap">
-            <span className="search-icon">🔍</span>
-            <input
-              className="form-input"
-              placeholder="ค้นหาชื่อ หรือเบอร์โทร..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        <div className="card-section" style={{ marginBottom: 20 }}>
+          <div className="search-bar" style={{ marginBottom: 0 }}>
+            <div className="search-input-wrap">
+              <span className="search-icon">🔍</span>
+              <input
+                className="form-input"
+                placeholder="ค้นหาชื่อ หรือเบอร์โทร..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <select className="form-select" style={{ width: 160 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="">ทุกสถานะ</option>
+              <option value="active">กำลังส่ง</option>
+              <option value="overdue">ค้างส่ง</option>
+              <option value="closed">จบยอดแล้ว</option>
+              <option value="restructured">ปรับยอด</option>
+            </select>
+            <select className="form-select" style={{ width: 180 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="">ทุกประเภท</option>
+              <option value="daily">ดอกรายวัน</option>
+              <option value="weekly">ผ่อนรายอาทิตย์</option>
+              <option value="monthly">ผ่อนรายเดือน</option>
+              <option value="upfront">ดอกหน้า</option>
+              <option value="bullet">เงินก้อน+ดอก</option>
+              <option value="reducing">ลดต้นลดดอก</option>
+            </select>
           </div>
-          <select className="form-select" style={{ width: 160 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="">ทุกสถานะ</option>
-            <option value="active">กำลังส่ง</option>
-            <option value="overdue">ค้างส่ง</option>
-            <option value="closed">จบยอดแล้ว</option>
-            <option value="restructured">ปรับยอด</option>
-          </select>
-          <select className="form-select" style={{ width: 180 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="">ทุกประเภท</option>
-            <option value="daily">ดอกรายวัน</option>
-            <option value="weekly">ผ่อนรายอาทิตย์</option>
-            <option value="monthly">ผ่อนรายเดือน</option>
-            <option value="upfront">ดอกหน้า</option>
-            <option value="bullet">เงินก้อน+ดอก</option>
-            <option value="reducing">ลดต้นลดดอก</option>
-          </select>
         </div>
 
         {filtered.length === 0 ? (

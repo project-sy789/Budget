@@ -1029,6 +1029,30 @@ input[type="date"].form-input {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* Dashboard Layouts */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.dashboard-alerts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-alerts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== STEPPER ===== */
 .stepper {
   display: flex;

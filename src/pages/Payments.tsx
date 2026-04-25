@@ -28,32 +28,42 @@ export default function Payments() {
     <div className="fade-in">
       <div className="page-header">
         <h2>💳 ประวัติการชำระทั้งหมด</h2>
-        <p>พบ {sorted.length} รายการ</p>
+        <p>พบ {sorted.length} รายการชำระเงิน</p>
       </div>
       <div className="page-content">
-        <div className="stats-row" style={{ marginBottom: 20 }}>
-          <div className="stat-item">
-            <div className="stat-value">{formatBaht(totalInterest)}</div>
-            <div className="stat-label">ดอกเบี้ยรวม</div>
+        <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 24 }}>
+          <div className="kpi-card gold">
+            <div className="kpi-label">ดอกเบี้ยรวม</div>
+            <div className="kpi-value gold">{formatBaht(totalInterest)}</div>
+            <div className="kpi-sub">จากทุกรายการ</div>
+            <div className="kpi-icon">💰</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value" style={{ color: 'var(--success)' }}>{formatBaht(totalPrincipal)}</div>
-            <div className="stat-label">คืนต้นรวม</div>
+          <div className="kpi-card success">
+            <div className="kpi-label">คืนต้นรวม</div>
+            <div className="kpi-value success">{formatBaht(totalPrincipal)}</div>
+            <div className="kpi-sub">เงินต้นที่รับคืน</div>
+            <div className="kpi-icon">📥</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value" style={{ color: 'var(--info)' }}>{formatBaht(totalInterest + totalPrincipal)}</div>
-            <div className="stat-label">ยอดรับรวม</div>
+          <div className="kpi-card info">
+            <div className="kpi-label">ยอดรับรวม</div>
+            <div className="kpi-value" style={{ color: 'var(--info)' }}>{formatBaht(totalInterest + totalPrincipal)}</div>
+            <div className="kpi-sub">ดอก + ต้น</div>
+            <div className="kpi-icon">💵</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value" style={{ color: 'var(--text-secondary)' }}>{sorted.length}</div>
-            <div className="stat-label">จำนวนรายการ</div>
+          <div className="kpi-card purple">
+            <div className="kpi-label">จำนวนรายการ</div>
+            <div className="kpi-value" style={{ color: 'var(--purple)' }}>{sorted.length}</div>
+            <div className="kpi-sub">ทั้งหมด</div>
+            <div className="kpi-icon">📋</div>
           </div>
         </div>
 
-        <div className="search-bar">
-          <div className="search-input-wrap">
-            <span className="search-icon">🔍</span>
-            <input className="form-input" placeholder="ค้นหาชื่อผู้กู้ หรือเลขใบเสร็จ..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="card-section" style={{ marginBottom: 20 }}>
+          <div className="search-bar" style={{ marginBottom: 0 }}>
+            <div className="search-input-wrap">
+              <span className="search-icon">🔍</span>
+              <input className="form-input" placeholder="ค้นหาชื่อผู้กู้ หรือเลขใบเสร็จ..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
           </div>
         </div>
 
@@ -61,23 +71,25 @@ export default function Payments() {
           <div className="empty-state">
             <div className="empty-icon">💳</div>
             <h3>ยังไม่มีรายการชำระ</h3>
+            <p>รายการชำระเงินจะแสดงที่นี่</p>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>วันที่</th>
-                  <th>ผู้กู้</th>
-                  <th>ประเภทสินเชื่อ</th>
-                  <th>ยอดรวม</th>
-                  <th>ดอกเบี้ย</th>
-                  <th>เงินต้น</th>
-                  <th>วิธีชำระ</th>
-                  <th>ใบเสร็จ</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="card-section">
+            <div className="table-wrap" style={{ border: 'none' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>ผู้กู้</th>
+                    <th>ประเภทสินเชื่อ</th>
+                    <th>ยอดรวม</th>
+                    <th>ดอกเบี้ย</th>
+                    <th>เงินต้น</th>
+                    <th>วิธีชำระ</th>
+                    <th>ใบเสร็จ</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {sorted.map(p => {
                   const loan = loans.find(l => l.id === p.loan_id)
                   return (
@@ -97,6 +109,7 @@ export default function Payments() {
                 })}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>
