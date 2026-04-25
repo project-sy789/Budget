@@ -14,7 +14,15 @@ import './index.css'
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn())
-  const { loans, fetchLoans, subscribeToAll } = useStore()
+  const { loans, fetchLoans, subscribeToAll, theme } = useStore()
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light')
+    } else {
+      document.documentElement.removeAttribute('data-theme')
+    }
+  }, [])
 
   useEffect(() => {
     if (authed) {

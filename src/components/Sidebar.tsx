@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { logout } from '../lib/auth'
+import { useStore } from '../store/useStore'
 
 interface Props { onLogout: () => void; overdueCount: number }
 
@@ -12,6 +13,8 @@ const navItems = [
 ]
 
 export default function Sidebar({ onLogout, overdueCount }: Props) {
+  const { theme, toggleTheme } = useStore()
+
   const handleLogout = () => {
     logout()
     onLogout()
@@ -50,7 +53,10 @@ export default function Sidebar({ onLogout, overdueCount }: Props) {
       </nav>
 
       <div className="sidebar-footer">
-        <button onClick={handleLogout} className="btn btn-secondary btn-full btn-sm">
+        <button onClick={toggleTheme} className="btn btn-secondary btn-full btn-sm" style={{ marginBottom: 8 }}>
+          {theme === 'dark' ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด'}
+        </button>
+        <button onClick={handleLogout} className="btn btn-danger btn-full btn-sm" style={{ opacity: 0.8 }}>
           🚪 ออกจากระบบ
         </button>
       </div>

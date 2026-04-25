@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase'
 import type { Loan, Payment } from '../lib/supabase'
 
 interface AppState {
+  theme: 'dark' | 'light'
   loans: Loan[]
   payments: Payment[]
   loading: boolean
+  toggleTheme: () => void
   fetchLoans: () => Promise<void>
   fetchPayments: (loanId?: string) => Promise<void>
   addLoan: (loan: Omit<Loan, 'id' | 'created_at'>) => Promise<Loan | null>
@@ -17,9 +19,21 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
+  theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   loans: [],
   payments: [],
   loading: false,
+
+  toggleTheme: () => set(s => {
+    const newTheme = s.theme === 'dark' ? 'light' : 'dark'
+    localStorage.setItem('theme', newTheme)
+    if (newTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light')
+    } else {
+      document.documentElement.removeAttribute('data-theme')
+    }
+    return { theme: newTheme }
+  }),
 
   fetchLoans: async () => {
     set({ loading: true })
