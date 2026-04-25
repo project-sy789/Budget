@@ -23,12 +23,33 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
   const [newType, setNewType] = useState(loan.loan_type)
   const [newRate, setNewRate] = useState(loan.interest_rate.toString())
   const [newPeriod, setNewPeriod] = useState(loan.interest_period)
+  const [newInterestAmt, setNewInterestAmt] = useState(((loan.principal * loan.interest_rate) / 100).toString())
   
   const [saving, setSaving] = useState(false)
+
+  // Auto-calculate Rate from Amount
+  const handleInterestAmtChange = (amt: string) => {
+    setNewInterestAmt(amt)
+    const principal = parseFloat(newPrincipal) || 0
+    const interest = parseFloat(amt) || 0
+    if (principal > 0) {
+      const rate = (interest / principal) * 100
+      setNewRate(rate.toFixed(2))
+    }
+  }
+
+  // Auto-calculate Amount from Rate or Principal
+  const handleRateOrPrincipalChange = (p: string, r: string) => {
+    const principal = parseFloat(p) || 0
+    const rate = parseFloat(r) || 0
+    const interest = (principal * rate) / 100
+    setNewInterestAmt(interest.toFixed(2))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+    // ... rest of the logic
 
     try {
       // 1. Close the current loan
@@ -115,7 +136,43 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                 <div className="section-title-main" style={{ color: 'var(--success)', marginBottom: 16 }}>🌳 2. ตั้งยอดใหม่ทันที</div>
                 <div className="form-group">
                   <label className="form-label">เงินต้นก้อนใหม่ (บาท)</label>
-                  <input className="form-input" type="number" step="0.01" value={newPrincipal} onChange={e => setNewPrincipal(e.target.value)} required />
+                  <input 
+                    className="form-input" 
+                    type="number" 
+                    step="0.01" 
+                    value={newPrincipal} 
+                    onChange={e => {
+                      setNewPrincipal(e.target.value)
+                      handleRateOrPrincipalChange(e.target.value, newRate)
+                    }} 
+                    required 
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">ยอดดอกเบี้ย (บาท)</label>
+                    <input 
+                      className="form-input" 
+                      type="number" 
+                      step="0.01" 
+                      value={newInterestAmt} 
+                      onChange={e => handleInterestAmtChange(e.target.value)} 
+                      placeholder="เช่น 1000"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ดอกเบี้ย (%)</label>
+                    <input 
+                      className="form-input" 
+                      type="number" 
+                      step="0.01"
+                      value={newRate} 
+                      onChange={e => {
+                        setNewRate(e.target.value)
+                        handleRateOrPrincipalChange(newPrincipal, e.target.value)
+                      }} 
+                    />
+                  </div>
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -124,20 +181,17 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                       <option value="daily">รายวัน (Flat)</option>
                       <option value="weekly">รายอาทิตย์</option>
                       <option value="monthly">รายเดือน</option>
+                      <option value="upfront">หักดอกก่อน (Upfront)</option>
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">ดอกเบี้ย (%)</label>
-                    <input className="form-input" type="number" value={newRate} onChange={e => setNewRate(e.target.value)} />
+                    <label className="form-label">รอบดอกเบี้ย</label>
+                    <select className="form-select" value={newPeriod} onChange={e => setNewPeriod(e.target.value as any)}>
+                      <option value="daily">ต่อวัน</option>
+                      <option value="weekly">ต่ออาทิตย์</option>
+                      <option value="monthly">ต่อเดือน</option>
+                    </select>
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">รอบดอกเบี้ย</label>
-                  <select className="form-select" value={newPeriod} onChange={e => setNewPeriod(e.target.value as any)}>
-                    <option value="daily">ต่อวัน</option>
-                    <option value="weekly">ต่ออาทิตย์</option>
-                    <option value="monthly">ต่อเดือน</option>
-                  </select>
                 </div>
               </div>
 
