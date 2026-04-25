@@ -348,7 +348,9 @@ export default function AddLoan() {
                   )}
                   {errors.interest_rate && <div className="form-error">{errors.interest_rate}</div>}
                   {interestMode === 'amount' && (
-                    <div className="form-hint-pill">≈ {parseFloat(form.interest_rate).toFixed(2)}% ต่อรอบ</div>
+                    <div className="form-hint-pill">
+                      ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label.replace('% ', '') || 'ต่อรอบ'}
+                    </div>
                   )}
                 </div>
                 <div className="form-group">
