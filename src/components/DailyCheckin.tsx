@@ -44,11 +44,14 @@ export default function DailyCheckin({ loan, payments }: Props) {
       
       const dateStr = format(curr, 'yyyy-MM-dd')
       const dayPayments = payments.filter(p => p.payment_date === dateStr)
+      const isPast = !isAfter(curr, today) && !isToday(curr)
       const isFuture = isAfter(curr, today)
       
       let symbol = ''
       if (dayPayments.length > 0) {
         symbol = '✅'.repeat(dayPayments.length)
+      } else if (isPast) {
+        symbol = '❌' // Use ❌ only for the report text
       }
 
       data.push({
@@ -57,6 +60,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
         dateStr,
         payments: dayPayments,
         symbol,
+        isPast,
         isFuture,
         isMonthHeader: false,
         id: dateStr
@@ -69,10 +73,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
   }, [startDate, dueDate, payments])
 
   const handleQuickPay = async (dateStr: string, hasPayments: boolean) => {
-    if (hasPayments) {
-      // If already paid, maybe don't do anything or show a message
-      return
-    }
+    if (hasPayments) return
     if (defaultDailyAmt <= 0) {
       alert('ไม่สามารถเพิ่มอัตโนมัติได้ เนื่องจากไม่พบยอดส่งรายวันที่ชัดเจน')
       return
@@ -163,22 +164,37 @@ export default function DailyCheckin({ loan, payments }: Props) {
             
             const isTodayDate = isToday(d.date!)
             const isSaving = savingDate === d.dateStr
+            const hasPaid = d.payments!.length > 0
             
+            // UI Background Logic
+            let bgColor = 'var(--bg-secondary)'
+            let borderColor = 'var(--border)'
+            
+            if (hasPaid) {
+              bgColor = 'var(--success-bg)'
+            } else if (isTodayDate) {
+              bgColor = 'var(--gold-glow)'
+              borderColor = 'var(--gold)'
+            } else if (d.isPast) {
+              bgColor = 'rgba(239, 68, 68, 0.1)' // Light red for missed days
+              borderColor = 'rgba(239, 68, 68, 0.2)'
+            }
+
             return (
               <button
                 key={d.id}
-                onClick={() => !d.isFuture && handleQuickPay(d.dateStr!, d.payments!.length > 0)}
+                onClick={() => !d.isFuture && handleQuickPay(d.dateStr!, hasPaid)}
                 disabled={d.isFuture || isSaving}
                 style={{
-                  width: 'calc(14.28% - 7px)', // 7 items per row
+                  width: 'calc(14.28% - 7px)', 
                   minWidth: '40px',
                   height: '56px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  background: d.payments!.length > 0 ? 'var(--success-bg)' : isTodayDate ? 'var(--gold-glow)' : 'var(--bg-secondary)',
-                  border: `1px solid ${isTodayDate ? 'var(--gold)' : 'var(--border)'}`,
+                  background: bgColor,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: 8,
                   cursor: d.isFuture ? 'default' : 'pointer',
                   opacity: d.isFuture ? 0.5 : 1,
@@ -190,7 +206,11 @@ export default function DailyCheckin({ loan, payments }: Props) {
                   {d.day}
                 </div>
                 <div style={{ fontSize: '1.1rem', marginTop: 2 }}>
-                  {isSaving ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : d.symbol}
+                  {isSaving ? (
+                    <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                  ) : (
+                    d.symbol?.includes('✅') ? d.symbol : '' // Only show ✅ in UI, hide ❌
+                  )}
                 </div>
               </button>
             )
