@@ -231,10 +231,10 @@ export default function AddLoan() {
       case 'daily':
       case 'yearly': {
         const res = calcDailyFlat(p, r, period, daysToDate)
-        // If user manually set installment amount, the total repayment is (installment * days)
-        // Otherwise, it is (principal + interest)
+        // For daily loans, the total repayment is ALWAYS (daily amount * days)
+        // This reflects the 'principal-first' model where the daily payment includes principal.
         const displayInstallment = form.installment_amount ? parseFloat(form.installment_amount) : res.dailyInterest
-        const actualTotalRepay = form.installment_amount ? (displayInstallment * daysToDate) : res.totalRepay
+        const actualTotalRepay = displayInstallment * daysToDate
         const actualTotalInterest = actualTotalRepay - p
 
         return { summary: [
