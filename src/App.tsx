@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { isLoggedIn } from './lib/auth'
 import { useStore } from './store/useStore'
-import AgentDashboard from './pages/AgentDashboard'
+import Agents from './pages/Agents'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Loans from './pages/Loans'
@@ -48,7 +48,7 @@ export default function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/agents" element={<AgentDashboard />} />
+            <Route path="/agents" element={<Agents />} />
             <Route path="/loans" element={<Loans />} />
             <Route path="/loans/:id" element={<LoanDetail />} />
             <Route path="/add-loan" element={<AddLoan />} />

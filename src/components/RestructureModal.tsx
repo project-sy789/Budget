@@ -66,7 +66,10 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
           status: 'active',
           collateral: loan.collateral,
           guarantor_name: loan.guarantor_name,
-          include_first_day: true
+          include_first_day: true,
+          installments: null,
+          installment_amount: null,
+          notes: `ปรับโครงสร้างจากสัญญาเดิม #${loan.id.slice(0, 8)}`
         })
       }
 

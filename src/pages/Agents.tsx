@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { format, isToday, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 
-export default function AgentDashboard() {
+export default function Agents() {
   const { loans, payments, addPayment } = useStore()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [checking, setChecking] = useState<string | null>(null)
