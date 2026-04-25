@@ -67,7 +67,7 @@ export const useStore = create<AppState>((set) => ({
   subscribeToAll: () => {
     const loanSub = supabase
       .channel('loans-realtime')
-      .on('postgres_changes', { event: '*', table: 'loans' }, (payload) => {
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'loans' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           set(s => ({ loans: [payload.new as Loan, ...s.loans] }))
         } else if (payload.eventType === 'UPDATE') {
@@ -80,7 +80,7 @@ export const useStore = create<AppState>((set) => ({
 
     const paymentSub = supabase
       .channel('payments-realtime')
-      .on('postgres_changes', { event: '*', table: 'payments' }, (payload) => {
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'payments' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           set(s => ({ payments: [payload.new as Payment, ...s.payments] }))
         } else if (payload.eventType === 'DELETE') {

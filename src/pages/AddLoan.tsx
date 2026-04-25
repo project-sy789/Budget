@@ -72,12 +72,6 @@ export default function AddLoan() {
       }
 
       // Sync interest if mode is amount and principal or rate changes
-      if (interestMode === 'amount' && (key === 'principal' || key === 'interest_rate')) {
-        const p = parseFloat(newForm.principal) || 0
-        const r = parseFloat(newForm.interest_rate) || 0
-        // If interest_rate is being set directly from the percentage input, we don't need to do anything
-        // But if principal changes while in amount mode, we need to update percentage
-      }
       if (interestMode === 'amount' && key === 'principal') {
         const p = parseFloat(val) || 0
         const amt = parseFloat(interestAmount) || 0
