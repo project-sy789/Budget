@@ -83,12 +83,43 @@ export default function DailyCheckin({ loan, payments }: Props) {
     if (!confirm(`บันทึกชำระเงินสด ${formatBaht(defaultDailyAmt)} สำหรับวันที่ ${format(parseISO(dateStr), 'd MMM', { locale: th })} ใช่หรือไม่?`)) return
     
     setSavingDate(dateStr)
+    
+    let interestPaid = 0
+    let principalPaid = 0
+
+    // Intelligent split based on loan type
+    if (['weekly', 'monthly', 'reducing'].includes(loan.loan_type) && loan.installments) {
+      // For installment loans, split based on total installments
+      // We need a helper to get daily rate
+      const dailyRate = (rate: number, period: string) => {
+        switch (period) {
+          case 'daily': return rate / 100
+          case 'weekly': return rate / 100 / 7
+          case 'monthly': return rate / 100 / 30
+          case 'yearly': return rate / 100 / 365
+          default: return rate / 100 / 30
+        }
+      }
+      
+      const daysCount = loan.loan_type === 'weekly' ? loan.installments * 7 : loan.installments * 30
+      const totalInterest = loan.principal * dailyRate(loan.interest_rate, loan.interest_period) * daysCount
+      const totalRepay = loan.principal + totalInterest
+      const ratio = loan.principal / totalRepay
+      
+      principalPaid = defaultDailyAmt * ratio
+      interestPaid = defaultDailyAmt - principalPaid
+    } else {
+      // For daily/flat loans, cover interest first, then principal
+      interestPaid = Math.min(dailyInfo.dailyInterest, defaultDailyAmt)
+      principalPaid = Math.max(defaultDailyAmt - dailyInfo.dailyInterest, 0)
+    }
+
     await addPayment({
       loan_id: loan.id,
       payment_date: dateStr,
       amount: defaultDailyAmt,
-      interest_paid: Math.min(dailyInfo.dailyInterest, defaultDailyAmt),
-      principal_paid: Math.max(defaultDailyAmt - dailyInfo.dailyInterest, 0),
+      interest_paid: Number(interestPaid.toFixed(2)),
+      principal_paid: Number(principalPaid.toFixed(2)),
       payment_method: 'cash',
       receipt_no: '',
       notes: 'Quick Check-in'
