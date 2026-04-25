@@ -64,7 +64,7 @@ export default function PaymentModal({ loan, accruedInterest, onClose, onSaved }
                 ⚠️ ดอกเบี้ยค้างรับ: <strong>{formatBaht(accruedInterest)}</strong>
               </div>
             )}
-            <div className="form-row">
+            <div className="form-row stack-on-ipad">
               <div className="form-group">
                 <label className="form-label">วันที่ชำระ</label>
                 <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
@@ -92,7 +92,7 @@ export default function PaymentModal({ loan, accruedInterest, onClose, onSaved }
                 required
               />
             </div>
-            <div className="form-row">
+            <div className="form-row stack-on-ipad">
               <div className="form-group">
                 <label className="form-label">ตัดดอกเบี้ย (บาท)</label>
                 <input className="form-input" type="number" step="0.01" value={interestPaid} onChange={e => setInterestPaid(e.target.value)} />
@@ -104,7 +104,7 @@ export default function PaymentModal({ loan, accruedInterest, onClose, onSaved }
                 <div className="form-hint">ต้นคงเหลือ {formatBaht(loan.principal)}</div>
               </div>
             </div>
-            <div className="form-row">
+            <div className="form-row stack-on-ipad">
               <div className="form-group">
                 <label className="form-label">เลขที่ใบเสร็จ</label>
                 <input className="form-input" value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="REC-001" />

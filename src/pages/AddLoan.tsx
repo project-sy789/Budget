@@ -480,11 +480,11 @@ export default function AddLoan() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={saving}>
-                {saving ? '⏳ กำลังบันทึก...' : '💾 บันทึกสินเชื่อ'}
+            <div style={{ display: 'flex', gap: 12, marginTop: 30, justifyContent: 'center' }}>
+              <button type="button" className="btn btn-secondary btn-lg" style={{ minWidth: 160 }} onClick={() => navigate('/loans')}>ยกเลิก</button>
+              <button id="save-loan-btn" type="submit" className="btn btn-primary btn-lg" style={{ minWidth: 200 }} disabled={saving}>
+                {saving ? <><span className="spinner" /> กำลังบันทึก...</> : '💾 บันทึกสินเชื่อ'}
               </button>
-              <button type="button" className="btn btn-secondary btn-lg" onClick={() => navigate('/loans')}>ยกเลิก</button>
             </div>
           </form>
 
