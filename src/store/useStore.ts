@@ -21,8 +21,8 @@ interface AppState {
     new_principal: number,
     new_loan_type: string,
     new_interest_rate: number,
-    new_installments: number,
-    new_installment_amount: number,
+    new_installments: number | null,
+    new_installment_amount: number | null,
     new_due_date: string,
     new_interest_period?: 'daily' | 'weekly' | 'monthly' | 'yearly'
   }) => Promise<void>
