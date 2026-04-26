@@ -8,8 +8,10 @@ const LOAN_TYPES = [
   { value: 'daily', label: '📅 ดอกรายวัน', desc: 'คิดดอกเบี้ยรายวัน' },
   { value: 'weekly', label: '📆 ผ่อนรายอาทิตย์', desc: 'ผ่อนทุกอาทิตย์' },
   { value: 'monthly', label: '🗓️ ผ่อนรายเดือน', desc: 'ผ่อนทุกเดือน' },
+  { value: 'yearly', label: '🏦 ดอกรายปี', desc: 'คิดรายปี' },
   { value: 'upfront', label: '💸 ดอกหน้า', desc: 'หักดอกล่วงหน้า' },
   { value: 'bullet', label: '💰 เงินก้อน+ดอก', desc: 'จ่ายตอนจบ' },
+  { value: 'reducing', label: '📉 ลดต้นลดดอก', desc: 'ดอกลดตามต้น' },
 ]
 
 interface Props {
