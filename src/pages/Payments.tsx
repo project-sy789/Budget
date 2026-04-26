@@ -22,7 +22,7 @@ export default function Payments() {
   const [type, setType] = useState('daily')
   const [principal, setPrincipal] = useState('10000')
   const [rate, setRate] = useState('10')
-  const [period, setPeriod] = useState('monthly') // Default to monthly for better intuition
+  const [period, setPeriod] = useState('monthly')
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
@@ -34,19 +34,22 @@ export default function Payments() {
 
     if (p <= 0) return null
 
-    // Normalize daily rate
+    // 1. Calculate Standard Values
     const dailyRate = (r / 100) / (pPeriod === 'daily' ? 1 : pPeriod === 'weekly' ? 7 : pPeriod === 'monthly' ? 30 : 365)
-    
-    // Calculate total days based on installments and type
     const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
     
     let perAmt = 0
+    let initialProfit = 0
+    let investmentCost = p
 
     if (type === 'daily' || type === 'weekly' || type === 'monthly' || type === 'yearly') {
       const totalInterest = p * dailyRate * totalDays
       const totalRepay = p + totalInterest
       perAmt = totalRepay / instCount
     } else if (type === 'upfront') {
+      const upfrontInterest = p * dailyRate * totalDays
+      initialProfit = upfrontInterest
+      investmentCost = p - upfrontInterest
       perAmt = p / instCount
     } else if (type === 'bullet') {
       const totalInterest = p * dailyRate * totalDays
@@ -62,9 +65,12 @@ export default function Payments() {
 
     const rows = []
     let remainingPrincipal = p
-    let totalReceived = 0
+    let totalReceivedFromInstallments = 0
     let breakEvenPeriod = null
 
+    // For Upfront, we've already received some "profit" but we are recovering the full "investmentCost"
+    // However, to keep it consistent with "Principal First", we always recover the CONTRACT PRINCIPAL first.
+    
     for (let i = 1; i <= instCount; i++) {
       const payment = (type === 'bullet' && i < instCount) ? 0 : perAmt
       let prinPaid = 0
@@ -81,7 +87,7 @@ export default function Payments() {
         intPaid = payment
       }
 
-      totalReceived += payment
+      totalReceivedFromInstallments += payment
 
       rows.push({
         period: i,
@@ -93,18 +99,28 @@ export default function Payments() {
       })
     }
 
-    return { rows, totalReceived, breakEvenPeriod, totalProfit: totalReceived - p }
+    const totalProfit = initialProfit + (totalReceivedFromInstallments - p)
+
+    return { 
+      rows, 
+      totalReceived: initialProfit + totalReceivedFromInstallments, 
+      breakEvenPeriod, 
+      totalProfit,
+      investmentCost,
+      initialProfit
+    }
   }, [principal, rate, installments, type, period, installmentAmt])
 
   return (
     <div className="fade-in">
       <div className="page-header">
         <h2>📉 วิเคราะห์และจำลองการคืนทุน</h2>
-        <p>คำนวณแผนการจ่ายเงินและจุดคุ้มทุน (กฎ: ต้นหักหมดก่อนดอก)</p>
+        <p>ตรวจสอบความคุ้มค่าและจุดคุ้มทุน (กฎ: ต้นหักหมดก่อนดอก)</p>
       </div>
 
       <div className="page-content">
         <div className="add-loan-grid" style={{ gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+          {/* Left: Controls */}
           <div className="card-section" style={{ height: 'fit-content' }}>
             <div className="section-title-main" style={{ marginBottom: 20 }}>⚙️ ตั้งค่าการจำลอง</div>
             
@@ -116,7 +132,7 @@ export default function Payments() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">เงินต้น (บาท)</label>
+              <label className="form-label">เงินต้นในสัญญา (บาท)</label>
               <input className="form-input" type="number" value={principal} onChange={e => setPrincipal(e.target.value)} />
             </div>
 
@@ -141,18 +157,23 @@ export default function Payments() {
             <div className="form-group">
               <label className="form-label">ปรับแต่งยอดส่งต่องวด (ถ้ามี)</label>
               <input className="form-input" type="number" placeholder="คำนวณให้อัตโนมัติ" value={installmentAmt} onChange={e => setInstallmentAmt(e.target.value)} />
-              <div className="form-hint" style={{ marginTop: 4 }}>ถ้าเว้นว่างไว้ ระบบจะคำนวณยอดส่งมาตรฐานให้ตามประเภทครับ</div>
             </div>
 
             {analysis && (
               <div style={{ marginTop: 24, padding: 16, background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>สรุปการวิเคราะห์</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>📊 สรุปผลวิเคราะห์</div>
+                {type === 'upfront' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>เงินที่ควักออกจริง:</span>
+                    <span style={{ fontWeight: 700, color: 'var(--info)' }}>{formatBaht(analysis.investmentCost)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span>จุดคืนทุน:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>{type === 'bullet' ? `งวดที่ ${analysis.breakEvenPeriod}` : `งวดที่ ${analysis.breakEvenPeriod || '-'}`}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>งวดที่ {analysis.breakEvenPeriod || '-'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span>ยอดรับรวม:</span>
+                  <span>ยอดรับรวมทั้งหมด:</span>
                   <span style={{ fontWeight: 700 }}>{formatBaht(analysis.totalReceived)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -163,11 +184,12 @@ export default function Payments() {
             )}
           </div>
 
+          {/* Right: Table */}
           <div className="card-section">
             <div className="section-header" style={{ marginBottom: 20 }}>
               <div>
-                <div className="section-title-main">📊 ตารางแผนการรับเงินและหักเงินต้น</div>
-                <div className="section-subtitle">จำลองการหักเงินต้นให้หมดก่อนแล้วจึงนับเป็นดอกเบี้ย</div>
+                <div className="section-title-main">📋 ตารางคำนวณรายงวด (ต้นหักหมดก่อนดอก)</div>
+                <div className="section-subtitle">จำลองกระแสเงินสดเพื่อหาจุดคุ้มทุนที่แท้จริง</div>
               </div>
             </div>
 
@@ -176,14 +198,24 @@ export default function Payments() {
                 <thead>
                   <tr>
                     <th>งวดที่</th>
-                    <th>ยอดส่ง</th>
+                    <th>ยอดรับ</th>
                     <th>หักเงินต้น</th>
                     <th>นับเป็นดอกเบี้ย</th>
-                    <th>เงินต้นคงเหลือ</th>
+                    <th>ต้นคงเหลือ</th>
                     <th>สถานะ</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {type === 'upfront' && analysis && (
+                    <tr style={{ background: 'rgba(212, 175, 55, 0.05)' }}>
+                      <td style={{ color: 'var(--text-muted)' }}>0</td>
+                      <td className="td-amount">{formatBaht(analysis.initialProfit)}</td>
+                      <td>-</td>
+                      <td style={{ color: 'var(--gold)' }}>{formatBaht(analysis.initialProfit)}</td>
+                      <td>{formatBaht(parseFloat(principal))}</td>
+                      <td><span className="badge badge-gold">💰 ดอกหน้า</span></td>
+                    </tr>
+                  )}
                   {analysis?.rows.map(row => (
                     <tr key={row.period} className={row.isBreakEven ? 'row-success' : ''} style={row.isBreakEven ? { background: 'rgba(34, 197, 94, 0.1)' } : {}}>
                       <td style={{ fontWeight: row.isBreakEven ? 700 : 400 }}>{row.period}</td>
@@ -195,7 +227,7 @@ export default function Payments() {
                         {row.isBreakEven ? (
                           <span className="badge badge-success">✅ คืนต้นครบ!</span>
                         ) : row.remainingPrincipal > 0 ? (
-                          <span className="badge badge-warning" style={{ opacity: 0.8 }}>⏳ กำลังคืนทุน</span>
+                          <span className="badge badge-warning" style={{ opacity: 0.8 }}>⏳ ตามทุน</span>
                         ) : (
                           <span className="badge badge-gold">💰 กำไร</span>
                         )}
