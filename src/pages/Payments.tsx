@@ -29,7 +29,7 @@ export default function Payments() {
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
-  // 1. Auto-set period based on type (Consistency with AddLoan)
+  // 1. Auto-set period based on type
   useEffect(() => {
     if (type === 'daily') setPeriod('daily')
     else if (type === 'weekly') setPeriod('weekly')
@@ -70,7 +70,6 @@ export default function Payments() {
 
     if (p <= 0) return null
 
-    // Determine Normalized Rates
     const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
     const dailyRate = (r / 100) / (pPeriod === 'daily' ? 1 : pPeriod === 'weekly' ? 7 : pPeriod === 'monthly' ? 30 : 365)
     
@@ -78,16 +77,11 @@ export default function Payments() {
     let investmentCost = p
     let totalTargetRepay = 0
 
-    // Determine the Exact Total Target Repayment
+    // Calculate Total Target Repayment based on Mode & Type
     if (interestMode === 'total') {
       totalTargetRepay = parseFloat(totalRepayInput) || 0
     } else if (interestMode === 'amount') {
       totalTargetRepay = p + (parseFloat(interestAmount) || 0)
-    } else if (type === 'upfront') {
-      const totalInterest = p * dailyRate * totalDays
-      initialProfit = totalInterest
-      investmentCost = p - initialProfit
-      totalTargetRepay = p // Upfront pays back principal only in installments
     } else if (type === 'reducing') {
       const monthlyRate = r / 100 / (pPeriod === 'monthly' ? 1 : pPeriod === 'daily' ? 1/30 : pPeriod === 'weekly' ? 7/30 : 1/12)
       const pmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
@@ -95,25 +89,31 @@ export default function Payments() {
     } else {
       const totalInterest = p * dailyRate * totalDays
       totalTargetRepay = p + totalInterest
+      if (type === 'upfront') {
+        initialProfit = totalInterest
+        investmentCost = p - initialProfit
+        totalTargetRepay = p // After upfront interest, we only collect principal back
+      }
     }
 
-    const standardPerAmt = totalTargetRepay / instCount
+    // Determine per-installment amount (Except for Bullet)
+    let calculatedPerAmt = totalTargetRepay / (instCount || 1)
+    if (type === 'bullet') calculatedPerAmt = totalTargetRepay
+
     const manualPerAmt = parseFloat(installmentAmt) || 0
-    const perAmt = manualPerAmt > 0 ? manualPerAmt : standardPerAmt
+    const perAmt = manualPerAmt > 0 ? manualPerAmt : calculatedPerAmt
 
     const rows = []
     let remainingPrincipal = p
     let totalCollected = 0
     let breakEvenPeriod = null
 
-    // Loop through installments
     for (let i = 1; i <= instCount; i++) {
-      // Determine payment for this period
       let payment = 0
       if (type === 'bullet') {
         payment = (i === instCount) ? totalTargetRepay : 0
       } else {
-        // Last installment adjustment for rounding precision
+        // Last installment balancing
         payment = (i === instCount && manualPerAmt === 0) 
           ? Math.max(0, totalTargetRepay - totalCollected) 
           : perAmt
@@ -122,13 +122,11 @@ export default function Payments() {
       let prinPaid = 0
       let intPaid = 0
 
-      // Rule: Principal First
+      // Principal First Rule
       if (remainingPrincipal > 0) {
         prinPaid = Math.min(payment, remainingPrincipal)
-        intPaid = payment - prinPaid
+        intPaid = Math.max(0, payment - prinPaid)
         remainingPrincipal -= prinPaid
-        
-        // Mark break-even (when principal is fully recovered)
         if (remainingPrincipal <= 0 && breakEvenPeriod === null) {
           breakEvenPeriod = i
         }
@@ -169,7 +167,6 @@ export default function Payments() {
 
       <div className="page-content">
         <div className="add-loan-grid" style={{ gridTemplateColumns: '320px 1fr', gap: '24px' }}>
-          {/* Controls Sidebar */}
           <div className="card-section" style={{ height: 'fit-content' }}>
             <div className="section-title-main" style={{ marginBottom: 20 }}>⚙️ ตั้งค่าการจำลอง</div>
             
@@ -225,11 +222,6 @@ export default function Payments() {
               >
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
-              {['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) && (
-                <div className="form-hint" style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--info)' }}>
-                  💡 ล็อกตามประเภทสินเชื่อที่เลือก
-                </div>
-              )}
             </div>
 
             <div className="form-group">
@@ -267,7 +259,6 @@ export default function Payments() {
             )}
           </div>
 
-          {/* Results Table */}
           <div className="card-section">
             <div className="section-header" style={{ marginBottom: 20 }}>
               <div>
