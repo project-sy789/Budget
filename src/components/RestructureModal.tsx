@@ -164,7 +164,9 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                         style={{ padding: '8px', fontSize: '0.85rem' }}
                         onClick={() => {
                           setNewType(t.value as any)
-                          if (['daily', 'weekly', 'monthly'].includes(t.value)) setNewPeriod(t.value as any)
+                          if (t.value === 'daily') setNewPeriod('daily')
+                          else if (t.value === 'weekly') setNewPeriod('weekly')
+                          else if (t.value === 'monthly') setNewPeriod('monthly')
                         }}
                       >
                         <div style={{ fontWeight: 600 }}>{t.label}</div>
