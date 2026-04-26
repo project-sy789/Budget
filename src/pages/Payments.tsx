@@ -5,8 +5,10 @@ const LOAN_TYPES = [
   { value: 'daily', label: '📅 ดอกรายวัน' },
   { value: 'weekly', label: '📆 ผ่อนรายอาทิตย์' },
   { value: 'monthly', label: '🗓️ ผ่อนรายเดือน' },
+  { value: 'yearly', label: '🏦 ดอกรายปี' },
   { value: 'upfront', label: '💸 ดอกหน้า' },
   { value: 'bullet', label: '💰 เงินก้อน+ดอก' },
+  { value: 'reducing', label: '📉 ลดต้นลดดอก' },
 ]
 
 const PERIODS = [
