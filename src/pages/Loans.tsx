@@ -159,8 +159,8 @@ export default function Loans() {
                         {isActuallyOverdue && <div style={{ fontSize: '0.72rem' }}>⚠️ ค้างชำระ</div>}
                       </td>
                       <td>
-                        <span className={`badge ${isActuallyOverdue ? 'badge-danger' : isPrincipalPaid ? 'badge-success' : statusBadgeClass(loan.status)}`}>
-                          {isActuallyOverdue ? '⚠️ ค้างชำระ' : isPrincipalPaid ? '✅ คืนต้นแล้ว' : statusLabel(loan.status)}
+                        <span className={`badge ${isActuallyOverdue ? 'badge-danger' : statusBadgeClass(loan.status)}`}>
+                          {isActuallyOverdue ? '⚠️ ค้างชำระ' : statusLabel(loan.status)}
                         </span>
                       </td>
                       <td>
