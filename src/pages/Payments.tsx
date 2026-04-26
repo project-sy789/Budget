@@ -22,7 +22,7 @@ export default function Payments() {
   const [type, setType] = useState('daily')
   const [principal, setPrincipal] = useState('10000')
   const [rate, setRate] = useState('10')
-  const [period, setPeriod] = useState('daily')
+  const [period, setPeriod] = useState('monthly') // Default to monthly for better intuition
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
@@ -34,28 +34,28 @@ export default function Payments() {
 
     if (p <= 0) return null
 
-    // 1. Calculate Total Repayment & Installment Amount based on Type
+    // Normalize daily rate
+    const dailyRate = (r / 100) / (pPeriod === 'daily' ? 1 : pPeriod === 'weekly' ? 7 : pPeriod === 'monthly' ? 30 : 365)
+    
+    // Calculate total days based on installments and type
+    const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
+    
     let perAmt = 0
 
     if (type === 'daily' || type === 'weekly' || type === 'monthly' || type === 'yearly') {
-      // Fixed interest for the whole period (total interest = principal * rate * installments)
-      const totalInterest = p * (r / 100) * instCount
+      const totalInterest = p * dailyRate * totalDays
       const totalRepay = p + totalInterest
       perAmt = totalRepay / instCount
     } else if (type === 'upfront') {
-      // Interest is taken upfront, installments only cover principal
       perAmt = p / instCount
     } else if (type === 'bullet') {
-      // One single payment at the end
-      const totalInterest = p * (r / 100) * instCount
+      const totalInterest = p * dailyRate * totalDays
       perAmt = p + totalInterest
     } else if (type === 'reducing') {
-      // Reducing balance monthly
-      const monthlyRate = r / 100 / 12
+      const monthlyRate = r / 100 / (pPeriod === 'monthly' ? 1 : pPeriod === 'daily' ? 1/30 : pPeriod === 'weekly' ? 7/30 : 1/12)
       perAmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
     }
 
-    // Override with manual input if provided
     if (parseFloat(installmentAmt) > 0) {
       perAmt = parseFloat(installmentAmt)
     }
@@ -65,7 +65,6 @@ export default function Payments() {
     let totalReceived = 0
     let breakEvenPeriod = null
 
-    // Simulation loop based on "Principal First" logic
     for (let i = 1; i <= instCount; i++) {
       const payment = (type === 'bullet' && i < instCount) ? 0 : perAmt
       let prinPaid = 0
@@ -106,7 +105,6 @@ export default function Payments() {
 
       <div className="page-content">
         <div className="add-loan-grid" style={{ gridTemplateColumns: '320px 1fr', gap: '24px' }}>
-          {/* Left: Controls */}
           <div className="card-section" style={{ height: 'fit-content' }}>
             <div className="section-title-main" style={{ marginBottom: 20 }}>⚙️ ตั้งค่าการจำลอง</div>
             
@@ -136,7 +134,7 @@ export default function Payments() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">จำนวนงวดที่ต้องการจำลอง</label>
+              <label className="form-label">{type === 'bullet' ? 'จำนวนวันทั้งหมด' : 'จำนวนงวดที่ต้องการจำลอง'}</label>
               <input className="form-input" type="number" value={installments} onChange={e => setInstallments(e.target.value)} />
             </div>
 
@@ -151,7 +149,7 @@ export default function Payments() {
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>สรุปการวิเคราะห์</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span>จุดคืนทุน:</span>
-                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>งวดที่ {analysis.breakEvenPeriod || '-'}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>{type === 'bullet' ? `งวดที่ ${analysis.breakEvenPeriod}` : `งวดที่ ${analysis.breakEvenPeriod || '-'}`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span>ยอดรับรวม:</span>
@@ -165,7 +163,6 @@ export default function Payments() {
             )}
           </div>
 
-          {/* Right: Table */}
           <div className="card-section">
             <div className="section-header" style={{ marginBottom: 20 }}>
               <div>
