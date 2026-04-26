@@ -35,7 +35,6 @@ export default function Payments() {
     const instCount = parseInt(installments) || 1
     if (p <= 0) return
 
-    // Calculate duration in periods for normalization
     const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
     const periodDivisor = period === 'daily' ? 1 : period === 'weekly' ? 7 : period === 'monthly' ? 30 : 365
     const durationInPeriods = totalDays / periodDivisor
@@ -52,7 +51,7 @@ export default function Payments() {
     }
   }, [interestMode, interestAmount, totalRepayInput, principal, installments, type, period])
 
-  // Auto-set period based on type to prevent errors
+  // Auto-set period based on type
   useMemo(() => {
     if (type === 'daily') setPeriod('daily')
     else if (type === 'weekly') setPeriod('weekly')
@@ -71,7 +70,6 @@ export default function Payments() {
 
     if (p <= 0) return null
 
-    // Calculate normalized values
     const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
     const dailyRate = (r / 100) / (pPeriod === 'daily' ? 1 : pPeriod === 'weekly' ? 7 : pPeriod === 'monthly' ? 30 : 365)
     
@@ -79,31 +77,32 @@ export default function Payments() {
     let initialProfit = 0
     let investmentCost = p
 
-    // In 'total' or 'amount' mode, we override perAmt to ensure it matches the user's intent perfectly
+    // 1. Determine the TOTAL INTEREST for simulation
+    let finalInterest = 0
     if (interestMode === 'total') {
-      perAmt = (parseFloat(totalRepayInput) || 0) / instCount
+      finalInterest = Math.max(0, (parseFloat(totalRepayInput) || 0) - p)
     } else if (interestMode === 'amount') {
-      perAmt = (p + (parseFloat(interestAmount) || 0)) / instCount
-    } else if (type === 'daily' || type === 'weekly' || type === 'monthly' || type === 'yearly') {
-      const totalInterest = p * dailyRate * totalDays
-      const totalRepay = p + totalInterest
-      perAmt = totalRepay / instCount
-    } else if (type === 'upfront') {
-      const upfrontInterest = p * dailyRate * totalDays
-      initialProfit = upfrontInterest
-      investmentCost = p - upfrontInterest
-      perAmt = p / instCount
-    } else if (type === 'bullet') {
-      const totalInterest = p * dailyRate * totalDays
-      perAmt = p + totalInterest
-    } else if (type === 'reducing') {
-      const monthlyRate = r / 100 / (pPeriod === 'monthly' ? 1 : pPeriod === 'daily' ? 1/30 : pPeriod === 'weekly' ? 7/30 : 1/12)
-      perAmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
+      finalInterest = parseFloat(interestAmount) || 0
+    } else {
+      finalInterest = p * dailyRate * totalDays
     }
 
-    if (parseFloat(installmentAmt) > 0) {
-      perAmt = parseFloat(installmentAmt)
+    // 2. Determine per-installment amount
+    if (type === 'bullet') {
+      perAmt = p + finalInterest // Total goes to the last installment
+    } else if (type === 'upfront') {
+      initialProfit = finalInterest
+      investmentCost = p - initialProfit
+      perAmt = p / instCount
+    } else if (type === 'reducing' && interestMode === 'percent') {
+      const monthlyRate = r / 100 / (pPeriod === 'monthly' ? 1 : pPeriod === 'daily' ? 1/30 : pPeriod === 'weekly' ? 7/30 : 1/12)
+      perAmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
+    } else {
+      perAmt = (p + finalInterest) / instCount
     }
+
+    // Manual override
+    if (parseFloat(installmentAmt) > 0) perAmt = parseFloat(installmentAmt)
 
     const rows = []
     let remainingPrincipal = p
@@ -214,11 +213,6 @@ export default function Payments() {
               >
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
-              {['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) && (
-                <div className="form-hint" style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--info)' }}>
-                  💡 ล็อกตามประเภทสินเชื่อที่เลือก
-                </div>
-              )}
             </div>
 
             <div className="form-group">
