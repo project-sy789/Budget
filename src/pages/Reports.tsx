@@ -139,6 +139,43 @@ export default function Reports() {
   const chartData = tab === 'daily' ? dailyData : tab === 'monthly' ? monthlyData : yearlyData
   const xKey = 'label'
 
+  // Loan Performance Analysis Data
+  const loanPerformance = useMemo(() => {
+    return loans.map(loan => {
+      const lp = payments
+        .filter(p => p.loan_id === loan.id)
+        .sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime())
+      
+      const totalPaid = lp.reduce((s, p) => s + (p.amount || 0), 0)
+      const paidPrincipal = lp.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      const paidInterest = lp.reduce((s, p) => s + (p.interest_paid || 0), 0)
+      const recoveryRate = (paidPrincipal / loan.principal) * 100
+      
+      // Calculate Break-even Date
+      let breakEvenDate: string | null = null
+      let cumulativePrincipal = 0
+      for (const p of lp) {
+        cumulativePrincipal += (p.principal_paid || 0)
+        if (cumulativePrincipal >= loan.principal) {
+          breakEvenDate = p.payment_date
+          break;
+        }
+      }
+
+      return {
+        ...loan,
+        totalPaid,
+        paidPrincipal,
+        paidInterest,
+        recoveryRate,
+        breakEvenDate,
+        currentProfit: Math.max(0, totalPaid - loan.principal)
+      }
+    }).sort((a, b) => (b.recoveryRate - a.recoveryRate))
+  }, [loans, payments])
+
+  const [tableTab, setTableTab] = useState<'analysis' | 'recent'>('analysis')
+
   return (
     <div className="fade-in">
       <div className="page-header">
@@ -284,18 +321,76 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
 
-        {/* Payments Table */}
+        {/* Table Section with Tabs */}
         <div className="card-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title-main">📋 รายการชำระทั้งหมด</div>
-              <div className="section-subtitle">แสดง 50 รายการล่าสุด</div>
+          <div className="section-header" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div className="section-title-main">📊 รายงานวิเคราะห์รายสัญญา</div>
+                <div className="section-subtitle">วิเคราะห์การคืนต้น กำไร และประสิทธิภาพรายคน</div>
+              </div>
+              <div className="segmented-control" style={{ width: 300 }}>
+                <button type="button" className={`segment-btn ${tableTab === 'analysis' ? 'active' : ''}`} onClick={() => setTableTab('analysis')}>📈 วิเคราะห์การปล่อยกู้</button>
+                <button type="button" className={`segment-btn ${tableTab === 'recent' ? 'active' : ''}`} onClick={() => setTableTab('recent')}>🕒 รายการล่าสุด</button>
+              </div>
             </div>
           </div>
-          {payments.length === 0 ? (
-            <div className="empty-state" style={{ padding: 40 }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 8, opacity: 0.3 }}>💳</div>
-              <div>ยังไม่มีรายการชำระ</div>
+
+          {tableTab === 'analysis' ? (
+            <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ชื่อผู้กู้ / ประเภท</th>
+                    <th>เงินต้น</th>
+                    <th>สถานะคืนต้น</th>
+                    <th>ยอดรับรวม</th>
+                    <th>กำไรรับแล้ว</th>
+                    <th>วันที่คืนต้นครบ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loanPerformance.map(item => (
+                    <tr key={item.id} className={item.status === 'closed' ? 'row-closed' : ''}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{item.borrower_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{loanTypeLabel(item.loan_type)}</div>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{formatBaht(item.principal)}</td>
+                      <td style={{ minWidth: 150 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{item.recoveryRate >= 100 ? 'คืนต้นครบแล้ว' : 'กำลังคืนต้น'}</span>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: item.recoveryRate >= 100 ? 'var(--success)' : 'var(--gold)' }}>
+                            {item.recoveryRate.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="progress-bar" style={{ height: 6 }}>
+                          <div 
+                            className="progress-fill" 
+                            style={{ 
+                              width: `${Math.min(100, item.recoveryRate)}%`,
+                              background: item.recoveryRate >= 100 ? 'var(--success)' : 'var(--gold)'
+                            }} 
+                          />
+                        </div>
+                      </td>
+                      <td className="td-amount">{formatBaht(item.totalPaid)}</td>
+                      <td style={{ color: item.currentProfit > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: item.currentProfit > 0 ? 600 : 400 }}>
+                        {item.currentProfit > 0 ? formatBaht(item.currentProfit) : '-'}
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        {item.breakEvenDate ? (
+                          <span className="badge badge-success" style={{ background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', border: '1px solid var(--success)' }}>
+                            ✅ {formatDate(item.breakEvenDate)}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>ยังไม่คืนทุน</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
@@ -304,7 +399,6 @@ export default function Reports() {
                   <tr>
                     <th>วันที่</th>
                     <th>ผู้กู้</th>
-                    <th>ประเภท</th>
                     <th>ยอดรวม</th>
                     <th>ดอกเบี้ย</th>
                     <th>เงินต้น</th>
@@ -318,7 +412,6 @@ export default function Reports() {
                       <tr key={p.id}>
                         <td>{formatDate(p.payment_date)}</td>
                         <td style={{ fontWeight: 600 }}>{loan?.borrower_name || '-'}</td>
-                        <td>{loan ? <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{loanTypeLabel(loan.loan_type)}</span> : '-'}</td>
                         <td className="td-amount td-gold">{formatBaht(p.amount)}</td>
                         <td style={{ color: 'var(--gold)' }}>{formatBaht(p.interest_paid || 0)}</td>
                         <td style={{ color: 'var(--success)' }}>{formatBaht(p.principal_paid || 0)}</td>
