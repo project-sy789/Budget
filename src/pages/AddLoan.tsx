@@ -494,6 +494,15 @@ export default function AddLoan() {
                       </>
                     )}
                   </div>
+                  <div className="form-group" style={{ marginTop: 12 }}>
+                    <label className="form-label" style={{ fontSize: '0.8rem' }}>ระยะเวลาดอกเบี้ย</label>
+                    <select className="form-select" value={form.interest_period} onChange={e => set('interest_period', e.target.value)}>
+                      {PERIODS.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {interestMode !== 'percent' && (
                     <div className="form-hint-pill" style={{ marginTop: 8 }}>
                       ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
