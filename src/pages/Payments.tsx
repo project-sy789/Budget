@@ -24,24 +24,50 @@ export default function Payments() {
   const [rate, setRate] = useState('10')
   const [period, setPeriod] = useState('daily')
   const [installments, setInstallments] = useState('20')
-  const [installmentAmt, setInstallmentAmt] = useState('1000')
+  const [installmentAmt, setInstallmentAmt] = useState('')
 
   const analysis = useMemo(() => {
     const p = parseFloat(principal) || 0
+    const r = parseFloat(rate) || 0
     const instCount = parseInt(installments) || 1
-    const perAmt = parseFloat(installmentAmt) || 0
+    const pPeriod = period as any
 
     if (p <= 0) return null
 
+    // 1. Calculate Total Repayment & Installment Amount based on Type
+    let perAmt = 0
+
+    if (type === 'daily' || type === 'weekly' || type === 'monthly' || type === 'yearly') {
+      // Fixed interest for the whole period (total interest = principal * rate * installments)
+      const totalInterest = p * (r / 100) * instCount
+      const totalRepay = p + totalInterest
+      perAmt = totalRepay / instCount
+    } else if (type === 'upfront') {
+      // Interest is taken upfront, installments only cover principal
+      perAmt = p / instCount
+    } else if (type === 'bullet') {
+      // One single payment at the end
+      const totalInterest = p * (r / 100) * instCount
+      perAmt = p + totalInterest
+    } else if (type === 'reducing') {
+      // Reducing balance monthly
+      const monthlyRate = r / 100 / 12
+      perAmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
+    }
+
+    // Override with manual input if provided
+    if (parseFloat(installmentAmt) > 0) {
+      perAmt = parseFloat(installmentAmt)
+    }
+
     const rows = []
     let remainingPrincipal = p
-    let totalInterestEarned = 0
     let totalReceived = 0
     let breakEvenPeriod = null
 
-    // Simulate based on "Principal First" logic
+    // Simulation loop based on "Principal First" logic
     for (let i = 1; i <= instCount; i++) {
-      const payment = perAmt
+      const payment = (type === 'bullet' && i < instCount) ? 0 : perAmt
       let prinPaid = 0
       let intPaid = 0
 
@@ -57,20 +83,19 @@ export default function Payments() {
       }
 
       totalReceived += payment
-      totalInterestEarned += intPaid
 
       rows.push({
         period: i,
         payment,
         principalPaid: prinPaid,
         interestPaid: intPaid,
-        remainingPrincipal,
+        remainingPrincipal: Math.max(0, remainingPrincipal),
         isBreakEven: i === breakEvenPeriod
       })
     }
 
-    return { rows, totalReceived, totalInterestEarned, breakEvenPeriod, totalProfit: totalReceived - p }
-  }, [principal, rate, installments, installmentAmt, type, period])
+    return { rows, totalReceived, breakEvenPeriod, totalProfit: totalReceived - p }
+  }, [principal, rate, installments, type, period, installmentAmt])
 
   return (
     <div className="fade-in">
@@ -111,14 +136,14 @@ export default function Payments() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">ยอดส่งต่องวด (บาท)</label>
-              <input className="form-input" type="number" value={installmentAmt} onChange={e => setInstallmentAmt(e.target.value)} />
-              <div className="form-hint" style={{ marginTop: 4 }}>ยอดรวมที่จะได้รับจริงในแต่ละงวด</div>
+              <label className="form-label">จำนวนงวดที่ต้องการจำลอง</label>
+              <input className="form-input" type="number" value={installments} onChange={e => setInstallments(e.target.value)} />
             </div>
 
             <div className="form-group">
-              <label className="form-label">จำนวนงวดที่ต้องการจำลอง</label>
-              <input className="form-input" type="number" value={installments} onChange={e => setInstallments(e.target.value)} />
+              <label className="form-label">ปรับแต่งยอดส่งต่องวด (ถ้ามี)</label>
+              <input className="form-input" type="number" placeholder="คำนวณให้อัตโนมัติ" value={installmentAmt} onChange={e => setInstallmentAmt(e.target.value)} />
+              <div className="form-hint" style={{ marginTop: 4 }}>ถ้าเว้นว่างไว้ ระบบจะคำนวณยอดส่งมาตรฐานให้ตามประเภทครับ</div>
             </div>
 
             {analysis && (
