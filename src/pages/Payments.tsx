@@ -29,7 +29,7 @@ export default function Payments() {
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
-  // 1. Suggest period based on type (but don't lock)
+  // Auto-set and LOCK period based on type
   useEffect(() => {
     if (type === 'daily') setPeriod('daily')
     else if (type === 'weekly') setPeriod('weekly')
@@ -40,7 +40,7 @@ export default function Payments() {
     else if (type === 'reducing') setPeriod('monthly')
   }, [type])
 
-  // 2. Sync rate calculation when inputs change
+  // Sync rate calculation
   useEffect(() => {
     const p = parseFloat(principal) || 0
     const instCount = parseInt(installments) || 1
@@ -96,8 +96,6 @@ export default function Payments() {
     }
 
     let calculatedPerAmt = totalTargetRepay / (instCount || 1)
-    if (type === 'bullet') calculatedPerAmt = totalTargetRepay
-
     const manualPerAmt = parseFloat(installmentAmt) || 0
     const perAmt = manualPerAmt > 0 ? manualPerAmt : calculatedPerAmt
 
@@ -209,9 +207,20 @@ export default function Payments() {
 
             <div className="form-group" style={{ marginTop: 12 }}>
               <label className="form-label" style={{ fontSize: '0.8rem' }}>ระยะเวลาดอกเบี้ย</label>
-              <select className="form-select" value={period} onChange={e => setPeriod(e.target.value)}>
+              <select 
+                className="form-select" 
+                value={period} 
+                onChange={e => setPeriod(e.target.value)}
+                disabled={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type)}
+                style={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : {}}
+              >
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
+              {['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) && (
+                <div className="form-hint" style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--info)' }}>
+                  💡 ล็อกตามประเภทสินเชื่อที่เลือก
+                </div>
+              )}
             </div>
 
             <div className="form-group">
