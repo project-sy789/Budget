@@ -130,6 +130,25 @@ export default function Loans() {
                       <td>
                         <div style={{ fontWeight: 600 }}>{loan.borrower_name}</div>
                         {loan.borrower_phone && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{loan.borrower_phone}</div>}
+                        
+                        {/* Principal Progress Bar */}
+                        <div style={{ marginTop: 8, width: '120px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>คืนต้นแล้ว</span>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isPrincipalPaid ? 'var(--success)' : 'var(--gold)' }}>
+                              {((paidPrincipal / loan.principal) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="progress-bar" style={{ height: 4, marginTop: 0 }}>
+                            <div 
+                              className="progress-fill" 
+                              style={{ 
+                                width: `${Math.min((paidPrincipal / loan.principal) * 100, 100)}%`,
+                                background: isPrincipalPaid ? 'var(--success)' : 'var(--gold)'
+                              }} 
+                            />
+                          </div>
+                        </div>
                       </td>
                       <td><span className={`badge ${loanTypeBadgeClass(loan.loan_type)}`}>{loanTypeLabel(loan.loan_type)}</span></td>
                       <td className="td-amount td-gold">{formatBaht(loan.principal)}</td>
