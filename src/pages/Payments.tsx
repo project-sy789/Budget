@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { formatBaht } from '../lib/formatters'
 
 const LOAN_TYPES = [
@@ -29,8 +29,19 @@ export default function Payments() {
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
-  // Sync rate when interestMode or inputs change
-  useMemo(() => {
+  // 1. Auto-set period based on type (Consistency with AddLoan)
+  useEffect(() => {
+    if (type === 'daily') setPeriod('daily')
+    else if (type === 'weekly') setPeriod('weekly')
+    else if (type === 'monthly') setPeriod('monthly')
+    else if (type === 'yearly') setPeriod('yearly')
+    else if (type === 'upfront') setPeriod('daily')
+    else if (type === 'bullet') setPeriod('daily')
+    else if (type === 'reducing') setPeriod('monthly')
+  }, [type])
+
+  // 2. Sync rate calculation when inputs change
+  useEffect(() => {
     const p = parseFloat(principal) || 0
     const instCount = parseInt(installments) || 1
     if (p <= 0) return
@@ -51,17 +62,6 @@ export default function Payments() {
     }
   }, [interestMode, interestAmount, totalRepayInput, principal, installments, type, period])
 
-  // Auto-set period based on type
-  useMemo(() => {
-    if (type === 'daily') setPeriod('daily')
-    else if (type === 'weekly') setPeriod('weekly')
-    else if (type === 'monthly') setPeriod('monthly')
-    else if (type === 'yearly') setPeriod('yearly')
-    else if (type === 'upfront') setPeriod('daily')
-    else if (type === 'bullet') setPeriod('daily')
-    else if (type === 'reducing') setPeriod('monthly')
-  }, [type])
-
   const analysis = useMemo(() => {
     const p = parseFloat(principal) || 0
     const r = parseFloat(rate) || 0
@@ -70,54 +70,65 @@ export default function Payments() {
 
     if (p <= 0) return null
 
+    // Determine Normalized Rates
     const totalDays = type === 'daily' ? instCount : type === 'weekly' ? instCount * 7 : type === 'monthly' ? instCount * 30 : type === 'yearly' ? instCount * 365 : instCount
     const dailyRate = (r / 100) / (pPeriod === 'daily' ? 1 : pPeriod === 'weekly' ? 7 : pPeriod === 'monthly' ? 30 : 365)
     
-    let perAmt = 0
     let initialProfit = 0
     let investmentCost = p
+    let totalTargetRepay = 0
 
-    // 1. Determine the TOTAL INTEREST for simulation
-    let finalInterest = 0
+    // Determine the Exact Total Target Repayment
     if (interestMode === 'total') {
-      finalInterest = Math.max(0, (parseFloat(totalRepayInput) || 0) - p)
+      totalTargetRepay = parseFloat(totalRepayInput) || 0
     } else if (interestMode === 'amount') {
-      finalInterest = parseFloat(interestAmount) || 0
-    } else {
-      finalInterest = p * dailyRate * totalDays
-    }
-
-    // 2. Determine per-installment amount
-    if (type === 'bullet') {
-      perAmt = p + finalInterest // Total goes to the last installment
+      totalTargetRepay = p + (parseFloat(interestAmount) || 0)
     } else if (type === 'upfront') {
-      initialProfit = finalInterest
+      const totalInterest = p * dailyRate * totalDays
+      initialProfit = totalInterest
       investmentCost = p - initialProfit
-      perAmt = p / instCount
-    } else if (type === 'reducing' && interestMode === 'percent') {
+      totalTargetRepay = p // Upfront pays back principal only in installments
+    } else if (type === 'reducing') {
       const monthlyRate = r / 100 / (pPeriod === 'monthly' ? 1 : pPeriod === 'daily' ? 1/30 : pPeriod === 'weekly' ? 7/30 : 1/12)
-      perAmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
+      const pmt = monthlyRate === 0 ? p / instCount : (p * monthlyRate * Math.pow(1 + monthlyRate, instCount)) / (Math.pow(1 + monthlyRate, instCount) - 1)
+      totalTargetRepay = pmt * instCount
     } else {
-      perAmt = (p + finalInterest) / instCount
+      const totalInterest = p * dailyRate * totalDays
+      totalTargetRepay = p + totalInterest
     }
 
-    // Manual override
-    if (parseFloat(installmentAmt) > 0) perAmt = parseFloat(installmentAmt)
+    const standardPerAmt = totalTargetRepay / instCount
+    const manualPerAmt = parseFloat(installmentAmt) || 0
+    const perAmt = manualPerAmt > 0 ? manualPerAmt : standardPerAmt
 
     const rows = []
     let remainingPrincipal = p
-    let totalReceivedFromInstallments = 0
+    let totalCollected = 0
     let breakEvenPeriod = null
 
+    // Loop through installments
     for (let i = 1; i <= instCount; i++) {
-      const payment = (type === 'bullet' && i < instCount) ? 0 : perAmt
+      // Determine payment for this period
+      let payment = 0
+      if (type === 'bullet') {
+        payment = (i === instCount) ? totalTargetRepay : 0
+      } else {
+        // Last installment adjustment for rounding precision
+        payment = (i === instCount && manualPerAmt === 0) 
+          ? Math.max(0, totalTargetRepay - totalCollected) 
+          : perAmt
+      }
+
       let prinPaid = 0
       let intPaid = 0
 
+      // Rule: Principal First
       if (remainingPrincipal > 0) {
         prinPaid = Math.min(payment, remainingPrincipal)
         intPaid = payment - prinPaid
         remainingPrincipal -= prinPaid
+        
+        // Mark break-even (when principal is fully recovered)
         if (remainingPrincipal <= 0 && breakEvenPeriod === null) {
           breakEvenPeriod = i
         }
@@ -125,7 +136,7 @@ export default function Payments() {
         intPaid = payment
       }
 
-      totalReceivedFromInstallments += payment
+      totalCollected += payment
 
       rows.push({
         period: i,
@@ -137,11 +148,11 @@ export default function Payments() {
       })
     }
 
-    const totalProfit = initialProfit + (totalReceivedFromInstallments - p)
+    const totalProfit = initialProfit + (totalCollected - p)
 
     return { 
       rows, 
-      totalReceived: initialProfit + totalReceivedFromInstallments, 
+      totalReceived: initialProfit + totalCollected, 
       breakEvenPeriod, 
       totalProfit,
       investmentCost,
@@ -153,11 +164,12 @@ export default function Payments() {
     <div className="fade-in">
       <div className="page-header">
         <h2>📉 วิเคราะห์และจำลองการคืนทุน</h2>
-        <p>ตรวจสอบความคุ้มค่าและจุดคุ้มทุน (กฎ: ต้นหักหมดก่อนดอก)</p>
+        <p>คำนวณแผนการจ่ายเงินและจุดคุ้มทุน (กฎ: ต้นหักหมดก่อนดอก)</p>
       </div>
 
       <div className="page-content">
         <div className="add-loan-grid" style={{ gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+          {/* Controls Sidebar */}
           <div className="card-section" style={{ height: 'fit-content' }}>
             <div className="section-title-main" style={{ marginBottom: 20 }}>⚙️ ตั้งค่าการจำลอง</div>
             
@@ -213,10 +225,15 @@ export default function Payments() {
               >
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
+              {['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) && (
+                <div className="form-hint" style={{ marginTop: 4, fontSize: '0.75rem', color: 'var(--info)' }}>
+                  💡 ล็อกตามประเภทสินเชื่อที่เลือก
+                </div>
+              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label">{type === 'bullet' ? 'จำนวนวันทั้งหมด' : 'จำนวนงวดที่ต้องการจำลอง'}</label>
+              <label className="form-label">{type === 'bullet' ? 'ระยะเวลา (วัน)' : 'จำนวนงวดทั้งหมด'}</label>
               <input className="form-input" type="number" value={installments} onChange={e => setInstallments(e.target.value)} />
             </div>
 
@@ -250,11 +267,12 @@ export default function Payments() {
             )}
           </div>
 
+          {/* Results Table */}
           <div className="card-section">
             <div className="section-header" style={{ marginBottom: 20 }}>
               <div>
                 <div className="section-title-main">📋 ตารางคำนวณรายงวด (ต้นหักหมดก่อนดอก)</div>
-                <div className="section-subtitle">จำลองกระแสเงินสดเพื่อหาจุดคุ้มทุนที่แท้จริง</div>
+                <div className="section-subtitle">วิเคราะห์การคืนทุนและการกระจายเงินต้น-ดอกเบี้ย</div>
               </div>
             </div>
 
