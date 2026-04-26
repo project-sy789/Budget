@@ -22,9 +22,29 @@ export default function Payments() {
   const [type, setType] = useState('daily')
   const [principal, setPrincipal] = useState('10000')
   const [rate, setRate] = useState('10')
+  const [interestMode, setInterestMode] = useState<'percent' | 'amount' | 'total'>('percent')
+  const [interestAmount, setInterestAmount] = useState('1000')
+  const [totalRepayInput, setTotalRepayInput] = useState('11000')
   const [period, setPeriod] = useState('monthly')
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
+
+  // Sync rate when interestMode or inputs change
+  useMemo(() => {
+    const p = parseFloat(principal) || 0
+    if (p <= 0) return
+
+    if (interestMode === 'amount') {
+      const amt = parseFloat(interestAmount) || 0
+      const calculatedRate = (amt / p) * 100
+      setRate(calculatedRate.toString())
+    } else if (interestMode === 'total') {
+      const total = parseFloat(totalRepayInput) || 0
+      const amt = Math.max(0, total - p)
+      const calculatedRate = (amt / p) * 100
+      setRate(calculatedRate.toString())
+    }
+  }, [interestMode, interestAmount, totalRepayInput, principal])
 
   const analysis = useMemo(() => {
     const p = parseFloat(principal) || 0
@@ -136,17 +156,40 @@ export default function Payments() {
               <input className="form-input" type="number" value={principal} onChange={e => setPrincipal(e.target.value)} />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">ดอกเบี้ย (%)</label>
-                <input className="form-input" type="number" value={rate} onChange={e => setRate(e.target.value)} />
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย</label>
+                <div className="segmented-control" style={{ width: 150 }}>
+                  <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestMode('percent')}>%</button>
+                  <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestMode('amount')}>บาท</button>
+                  <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestMode('total')}>รวม</button>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">ต่อระยะเวลา</label>
-                <select className="form-select" value={period} onChange={e => setPeriod(e.target.value)}>
-                  {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
+              <div style={{ position: 'relative' }}>
+                {interestMode === 'percent' ? (
+                  <>
+                    <input className="form-input" type="number" step="0.01" value={rate} onChange={e => setRate(e.target.value)} style={{ paddingRight: 36 }} />
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
+                  </>
+                ) : interestMode === 'amount' ? (
+                  <>
+                    <input className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} style={{ paddingRight: 36 }} />
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                  </>
+                ) : (
+                  <>
+                    <input className="form-input" type="number" step="0.01" value={totalRepayInput} onChange={e => setTotalRepayInput(e.target.value)} style={{ paddingRight: 36 }} />
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
+                  </>
+                )}
               </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label" style={{ fontSize: '0.8rem' }}>ระยะเวลาดอกเบี้ย</label>
+              <select className="form-select" value={period} onChange={e => setPeriod(e.target.value)}>
+                {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
