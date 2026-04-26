@@ -164,7 +164,7 @@ export default function Agents() {
               <div className="section-header">
                 <div className="section-title-main">📋 รายชื่อลูกหนี้ของ {selectedAgent}</div>
               </div>
-              <div className="table-container">
+              <div className="table-wrap">
                 <table className="data-table">
                   <thead>
                     <tr>
