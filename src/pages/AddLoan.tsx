@@ -125,6 +125,15 @@ export default function AddLoan() {
         setTimeout(() => syncFromTotal(newForm), 0)
       }
 
+      // Re-calculate if interest_period changes while in Amount or Total mode
+      if (key === 'interest_period' && typeof val === 'string') {
+        if (interestMode === 'amount') {
+          setTimeout(() => handleInterestAmountChange(interestAmount), 0)
+        } else if (interestMode === 'total') {
+          setTimeout(() => syncFromTotal(newForm), 0)
+        }
+      }
+
       return newForm
     })
     setErrors(e => ({ ...e, [key]: '' }))
