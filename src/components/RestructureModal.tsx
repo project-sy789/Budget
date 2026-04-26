@@ -120,7 +120,7 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: 1100, width: '98%', maxHeight: '95vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal" style={{ maxWidth: 1100, width: '98%', maxHeight: '95vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div className="modal-header">
           <h3>🔄 ปรับโครงสร้าง / เปิดยอดใหม่</h3>
           <button className="btn-close" onClick={onClose}>&times;</button>
