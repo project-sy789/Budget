@@ -29,7 +29,7 @@ export default function Payments() {
   const [installments, setInstallments] = useState('20')
   const [installmentAmt, setInstallmentAmt] = useState('')
 
-  // 1. Auto-set period based on type
+  // 1. Suggest period based on type (but don't lock)
   useEffect(() => {
     if (type === 'daily') setPeriod('daily')
     else if (type === 'weekly') setPeriod('weekly')
@@ -77,7 +77,6 @@ export default function Payments() {
     let investmentCost = p
     let totalTargetRepay = 0
 
-    // Calculate Total Target Repayment based on Mode & Type
     if (interestMode === 'total') {
       totalTargetRepay = parseFloat(totalRepayInput) || 0
     } else if (interestMode === 'amount') {
@@ -92,11 +91,10 @@ export default function Payments() {
       if (type === 'upfront') {
         initialProfit = totalInterest
         investmentCost = p - initialProfit
-        totalTargetRepay = p // After upfront interest, we only collect principal back
+        totalTargetRepay = p
       }
     }
 
-    // Determine per-installment amount (Except for Bullet)
     let calculatedPerAmt = totalTargetRepay / (instCount || 1)
     if (type === 'bullet') calculatedPerAmt = totalTargetRepay
 
@@ -113,7 +111,6 @@ export default function Payments() {
       if (type === 'bullet') {
         payment = (i === instCount) ? totalTargetRepay : 0
       } else {
-        // Last installment balancing
         payment = (i === instCount && manualPerAmt === 0) 
           ? Math.max(0, totalTargetRepay - totalCollected) 
           : perAmt
@@ -122,7 +119,6 @@ export default function Payments() {
       let prinPaid = 0
       let intPaid = 0
 
-      // Principal First Rule
       if (remainingPrincipal > 0) {
         prinPaid = Math.min(payment, remainingPrincipal)
         intPaid = Math.max(0, payment - prinPaid)
@@ -213,13 +209,7 @@ export default function Payments() {
 
             <div className="form-group" style={{ marginTop: 12 }}>
               <label className="form-label" style={{ fontSize: '0.8rem' }}>ระยะเวลาดอกเบี้ย</label>
-              <select 
-                className="form-select" 
-                value={period} 
-                onChange={e => setPeriod(e.target.value)}
-                disabled={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type)}
-                style={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(type) ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : {}}
-              >
+              <select className="form-select" value={period} onChange={e => setPeriod(e.target.value)}>
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
