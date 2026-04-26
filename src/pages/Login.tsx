@@ -54,9 +54,6 @@ export default function Login({ onLogin }: Props) {
           </button>
         </form>
 
-        <div style={{ marginTop: 20, padding: '12px', background: 'rgba(245,166,35,0.08)', borderRadius: 8, fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-          💡 หากยังไม่ได้ตั้งรหัสผ่าน ใส่อะไรก็ได้แล้วกด Enter
-        </div>
       </div>
     </div>
   )
