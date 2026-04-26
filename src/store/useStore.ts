@@ -23,7 +23,8 @@ interface AppState {
     new_interest_rate: number,
     new_installments: number,
     new_installment_amount: number,
-    new_due_date: string
+    new_due_date: string,
+    new_interest_period?: 'daily' | 'weekly' | 'monthly' | 'yearly'
   }) => Promise<void>
   subscribeToAll: () => () => void
 }
@@ -117,7 +118,7 @@ export const useStore = create<AppState>((set) => ({
       principal: data.new_principal,
       loan_type: data.new_loan_type as any,
       interest_rate: data.new_interest_rate,
-      interest_period: 'daily',
+      interest_period: data.new_interest_period || 'daily',
       installments: data.new_installments,
       installment_amount: data.new_installment_amount,
       start_date: data.closing_date,

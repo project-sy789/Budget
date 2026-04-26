@@ -161,8 +161,8 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                         className={`loan-type-btn ${newType === t.value ? 'active' : ''}`}
                         style={{ padding: '8px', fontSize: '0.85rem' }}
                         onClick={() => {
-                          setNewType(t.value)
-                          if (['daily', 'weekly', 'monthly'].includes(t.value)) setNewPeriod(t.value)
+                          setNewType(t.value as any)
+                          if (['daily', 'weekly', 'monthly'].includes(t.value)) setNewPeriod(t.value as any)
                         }}
                       >
                         <div style={{ fontWeight: 600 }}>{t.label}</div>
@@ -183,7 +183,7 @@ export default function RestructureModal({ loan, accruedInterest, remainingPrinc
                   </div>
                   <div className="form-group">
                     <label className="form-label">ต่อระยะเวลา</label>
-                    <select className="form-select" value={newPeriod} onChange={e => setNewPeriod(e.target.value)}>
+                    <select className="form-select" value={newPeriod} onChange={e => setNewPeriod(e.target.value as any)}>
                       <option value="daily">ต่อวัน</option>
                       <option value="weekly">ต่ออาทิตย์</option>
                       <option value="monthly">ต่อเดือน</option>
