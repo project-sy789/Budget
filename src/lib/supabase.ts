@@ -8,6 +8,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export type Database = {
   loans: Loan
   payments: Payment
+  agents: Agent
+}
+
+export interface Agent {
+  id: string
+  name: string
+  created_at: string
 }
 
 export interface Loan {

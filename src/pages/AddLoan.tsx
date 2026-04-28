@@ -57,7 +57,7 @@ const defaultForm: FormData = {
 export default function AddLoan() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { addLoan, updateLoan, loans } = useStore()
+  const { addLoan, updateLoan, loans, agents, addAgent } = useStore()
   const [form, setForm] = useState<FormData>(defaultForm)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -66,15 +66,13 @@ export default function AddLoan() {
   const [totalRepay, setTotalRepay] = useState('')
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
   const [dueDays, setDueDays] = useState('')
+  const isEdit = !!id
   const [isAddingNewAgent, setIsAddingNewAgent] = useState(false)
 
-  // Extract unique agent names from existing loans
+  // Get unique agent names from store (new professional approach)
   const existingAgents = useMemo(() => {
-    const names = loans
-      .map(l => l.agent_name)
-      .filter(name => name && name.trim() !== '')
-    return [...new Set(names)].sort()
-  }, [loans])
+    return agents.map(a => a.name).sort()
+  }, [agents])
 
   // Initialize isAddingNewAgent if agent name not in list (for edit mode)
   useEffect(() => {
@@ -82,8 +80,6 @@ export default function AddLoan() {
       setIsAddingNewAgent(true)
     }
   }, [isEdit, existingAgents])
-
-  const isEdit = !!id
 
   useEffect(() => {
     if (isEdit && loans.length > 0) {
@@ -347,6 +343,12 @@ export default function AddLoan() {
     if (!validate()) return
     setSaving(true)
     
+    // Automatically save new agent to centralized list if it's new
+    const trimmedAgent = form.agent_name.trim()
+    if (trimmedAgent && !existingAgents.includes(trimmedAgent)) {
+      await addAgent(trimmedAgent)
+    }
+
     const loanData = {
       borrower_name: form.borrower_name.trim(),
       borrower_phone: form.borrower_phone,
@@ -367,7 +369,7 @@ export default function AddLoan() {
       include_first_day: form.include_first_day,
       collateral: form.collateral,
       guarantor_name: form.guarantor_name,
-      agent_name: form.agent_name,
+      agent_name: trimmedAgent,
       notes: form.notes,
     }
 

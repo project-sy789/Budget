@@ -4,17 +4,20 @@ import type { Loan, Payment } from '../lib/supabase'
 
 interface AppState {
   theme: 'dark' | 'light'
-  loans: Loan[]
-  payments: Payment[]
+  agents: Agent[]
   loading: boolean
   toggleTheme: () => void
   fetchLoans: () => Promise<void>
   fetchPayments: (loanId?: string) => Promise<void>
+  fetchAgents: () => Promise<void>
   addLoan: (loan: Omit<Loan, 'id' | 'created_at'>) => Promise<Loan | null>
   updateLoan: (id: string, updates: Partial<Loan>) => Promise<void>
   deleteLoan: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
+  addAgent: (name: string) => Promise<Agent | null>
+  updateAgent: (id: string, name: string) => Promise<void>
+  deleteAgent: (id: string) => Promise<void>
   restructureLoan: (oldLoanId: string, data: {
     closing_amount: number,
     closing_date: string,
@@ -60,6 +63,27 @@ export const useStore = create<AppState>((set) => ({
     if (loanId) query = query.eq('loan_id', loanId)
     const { data } = await query
     set({ payments: data || [] })
+  },
+
+  fetchAgents: async () => {
+    const { data } = await supabase.from('agents').select('*').order('name')
+    set({ agents: data || [] })
+  },
+
+  addAgent: async (name) => {
+    const { data } = await supabase.from('agents').insert([{ name }]).select().single()
+    if (data) set(s => ({ agents: [...s.agents, data].sort((a, b) => a.name.localeCompare(b.name)) }))
+    return data
+  },
+
+  updateAgent: async (id, name) => {
+    const { data } = await supabase.from('agents').update({ name }).eq('id', id).select().single()
+    if (data) set(s => ({ agents: s.agents.map(a => a.id === id ? data : a) }))
+  },
+
+  deleteAgent: async (id) => {
+    await supabase.from('agents').delete().eq('id', id)
+    set(s => ({ agents: s.agents.filter(a => a.id !== id) }))
   },
 
   addLoan: async (loan) => {
@@ -169,10 +193,24 @@ export const useStore = create<AppState>((set) => ({
         }
       })
       .subscribe()
+    
+    const agentSub = supabase
+      .channel('agents-realtime')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'agents' }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          set(s => ({ agents: [...s.agents, payload.new as Agent].sort((a, b) => a.name.localeCompare(b.name)) }))
+        } else if (payload.eventType === 'UPDATE') {
+          set(s => ({ agents: s.agents.map(a => a.id === payload.new.id ? payload.new as Agent : a) }))
+        } else if (payload.eventType === 'DELETE') {
+          set(s => ({ agents: s.agents.filter(a => a.id !== payload.old.id) }))
+        }
+      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(loanSub)
       supabase.removeChannel(paymentSub)
+      supabase.removeChannel(agentSub)
     }
   },
 }))

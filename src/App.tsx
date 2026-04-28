@@ -17,7 +17,7 @@ import './index.css'
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn())
-  const { loans, fetchLoans, subscribeToAll, theme } = useStore()
+  const { loans, fetchLoans, fetchAgents, subscribeToAll, theme } = useStore()
 
   useEffect(() => {
     if (theme === 'light') {
@@ -30,6 +30,7 @@ export default function App() {
   useEffect(() => {
     if (authed) {
       fetchLoans()
+      fetchAgents?.()
       const unsubscribe = subscribeToAll()
       return () => unsubscribe()
     }

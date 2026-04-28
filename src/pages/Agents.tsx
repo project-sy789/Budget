@@ -4,25 +4,29 @@ import { formatBaht } from '../lib/formatters'
 import { Link } from 'react-router-dom'
 import { format, isToday, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
+import { supabase } from '../lib/supabase'
 
 export default function Agents() {
-  const { loans, payments, addPayment } = useStore()
+  const { loans, payments, addPayment, agents: storeAgents, updateAgent, deleteAgent } = useStore()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [checking, setChecking] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showManageModal, setShowManageModal] = useState(false)
+  const [editingAgent, setEditingAgent] = useState<{ id: string, name: string } | null>(null)
 
   const activeLoans = useMemo(() => loans.filter(l => l.status === 'active' || l.status === 'overdue'), [loans])
-  const agents = useMemo(() => {
-    const names = [...new Set(activeLoans.map(l => l.agent_name || 'ไม่มีสายส่ง'))]
-    return names.sort()
-  }, [activeLoans])
+  
+  // Use centralized agents from store
+  const agentsList = useMemo(() => {
+    return storeAgents.map(a => a.name).sort()
+  }, [storeAgents])
 
   // Set default agent if none selected
   useMemo(() => {
-    if (!selectedAgent && agents.length > 0) {
-      setSelectedAgent(agents[0])
+    if (!selectedAgent && agentsList.length > 0) {
+      setSelectedAgent(agentsList[0])
     }
-  }, [agents, selectedAgent])
+  }, [agentsList, selectedAgent])
 
   const agentLoans = useMemo(() => {
     return activeLoans.filter(l => (l.agent_name || 'ไม่มีสายส่ง') === selectedAgent)
@@ -95,12 +99,12 @@ export default function Agents() {
       const dailyAmt = loan.installment_amount || 0
       
       const loanDate = new Date(loan.start_date)
-      const dateStr = format(loanDate, 'd เมษายน', { locale: th })
-      const yearTh = (loanDate.getFullYear() + 543).toString()
+      const dateStr = format(loanDate, 'd MMMM', { locale: th })
+      const yearThStr = (loanDate.getFullYear() + 543).toString()
 
       text += `${idx + 1}. ${loan.borrower_name}\n`
       text += `🌳ต้น ${loan.principal.toLocaleString()}🌳  ${dateStr}\n`
-      text += `                            พ.ศ. ${yearTh}\n\n`
+      text += `                            พ.ศ. ${yearThStr}\n\n`
       text += `  🌼${dailyAmt.toLocaleString()}/วัน🌼 ${hasPaid ? '✅' : '📍'}\n`
       text += `.........................................\n\n`
     })
@@ -113,31 +117,72 @@ export default function Agents() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleUpdateAgentName = async () => {
+    if (!editingAgent || !editingAgent.name.trim()) return
+    const oldName = storeAgents.find(a => a.id === editingAgent.id)?.name
+    const newName = editingAgent.name.trim()
+
+    if (oldName === newName) {
+      setEditingAgent(null)
+      return
+    }
+
+    // 1. Update in agents table
+    await updateAgent(editingAgent.id, newName)
+
+    // 2. Update in all loans (to keep history/sync correctly)
+    if (oldName) {
+      await supabase.from('loans').update({ agent_name: newName }).eq('agent_name', oldName)
+    }
+
+    // Update selection if needed
+    if (selectedAgent === oldName) setSelectedAgent(newName)
+    
+    setEditingAgent(null)
+  }
+
+  const handleDeleteAgent = async (id: string, name: string) => {
+    if (!confirm(`ยืนยันการลบสายส่ง "${name}"? สัญญาที่เกี่ยวข้องจะไม่ถูกลบ แต่จะไม่มีชื่อคนดูแลระบุไว้`)) return
+    
+    // 1. Delete from agents table
+    await deleteAgent(id)
+
+    // 2. Clear from loans (Optional: set to empty string)
+    await supabase.from('loans').update({ agent_name: '' }).eq('agent_name', name)
+
+    if (selectedAgent === name) setSelectedAgent(null)
+  }
+
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <h2>🤝 กระดานคุมสายส่ง</h2>
-        <p>จัดการยอดโอนรายวันจากตัวแทนและสายส่ง</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2>🤝 กระดานคุมสายส่ง</h2>
+          <p>จัดการยอดโอนรายวันจากตัวแทนและสายส่ง</p>
+        </div>
+        <button className="btn btn-secondary btn-sm" onClick={() => setShowManageModal(true)}>
+          ⚙️ จัดการรายชื่อสายส่ง
+        </button>
       </div>
 
       <div className="page-content">
         {/* Agent Selector */}
         <div className="card-section" style={{ marginBottom: 20 }}>
           <div className="loan-type-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-            {agents.map(agent => (
+            {agentsList.map(agent => (
               <button
                 key={agent}
                 className={`loan-type-btn ${selectedAgent === agent ? 'active' : ''}`}
                 onClick={() => setSelectedAgent(agent)}
               >
                 <span className="label">{agent}</span>
-                <span className="desc">ลูกหนี้ {loans.filter(l => (l.agent_name || 'ไม่มีสายส่ง') === agent && l.status === 'active').length} ราย</span>
+                <span className="desc">ลูกหนี้ {loans.filter(l => (l.agent_name || 'ไม่มีสายส่ง') === agent && (l.status === 'active' || l.status === 'overdue')).length} ราย</span>
               </button>
             ))}
           </div>
         </div>
 
-        {selectedAgent && (
+        {selectedAgent ? (
           <>
             {/* Stats Overview */}
             <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: 24 }}>
@@ -155,7 +200,7 @@ export default function Agents() {
             {/* Quick Actions */}
             <div style={{ marginBottom: 20, display: 'flex', gap: 12 }}>
               <button className="btn btn-primary" onClick={generateLineReport}>
-                {copied ? '✅ คัดลอกแล้ว' : '📋 ก๊อปปี้รายงานส่งจูน'}
+                {copied ? '✅ คัดลอกแล้ว' : `📋 ก๊อปปี้รายงานส่ง${selectedAgent}`}
               </button>
             </div>
 
@@ -230,8 +275,58 @@ export default function Agents() {
               </div>
             </div>
           </>
+        ) : (
+          <div className="card-section" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 16, opacity: 0.3 }}>🤝</div>
+            <h3>ไม่พบข้อมูลสายส่ง</h3>
+            <p>กรุณาเพิ่มสายส่งใหม่ในขั้นตอนการเพิ่มสินเชื่อ</p>
+          </div>
         )}
       </div>
+
+      {/* Management Modal */}
+      {showManageModal && (
+        <div className="modal-overlay" onClick={() => setShowManageModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <h3>⚙️ จัดการรายชื่อสายส่ง</h3>
+              <button className="modal-close" onClick={() => setShowManageModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="agent-list-manage">
+                {storeAgents.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>ยังไม่มีข้อมูลสายส่ง</p>}
+                {storeAgents.map(agent => (
+                  <div key={agent.id} className="agent-manage-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                    {editingAgent?.id === agent.id ? (
+                      <div style={{ display: 'flex', gap: 8, flex: 1 }}>
+                        <input 
+                          className="form-input" 
+                          value={editingAgent.name} 
+                          onChange={e => setEditingAgent({ ...editingAgent, name: e.target.value })}
+                          autoFocus
+                        />
+                        <button className="btn btn-primary btn-sm" onClick={handleUpdateAgentName}>บันทึก</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setEditingAgent(null)}>ยกเลิก</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span style={{ fontWeight: 600 }}>{agent.name}</span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setEditingAgent({ id: agent.id, name: agent.name })}>✏️ แก้ไข</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDeleteAgent(agent.id, agent.name)}>🗑️ ลบ</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowManageModal(false)}>ปิดหน้าต่าง</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
