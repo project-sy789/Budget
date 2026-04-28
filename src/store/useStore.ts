@@ -4,6 +4,8 @@ import type { Loan, Payment } from '../lib/supabase'
 
 interface AppState {
   theme: 'dark' | 'light'
+  loans: Loan[]
+  payments: Payment[]
   agents: Agent[]
   loading: boolean
   toggleTheme: () => void
