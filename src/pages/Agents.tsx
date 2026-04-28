@@ -287,7 +287,7 @@ export default function Agents() {
       {/* Management Modal */}
       {showManageModal && (
         <div className="modal-overlay" onClick={() => setShowManageModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <h3>⚙️ จัดการรายชื่อสายส่ง</h3>
               <button className="modal-close" onClick={() => setShowManageModal(false)}>×</button>
