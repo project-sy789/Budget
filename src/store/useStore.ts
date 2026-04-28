@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import type { Loan, Payment } from '../lib/supabase'
+import type { Loan, Payment, Agent } from '../lib/supabase'
 
 interface AppState {
   theme: 'dark' | 'light'
@@ -38,6 +38,7 @@ export const useStore = create<AppState>((set) => ({
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   loans: [],
   payments: [],
+  agents: [],
   loading: false,
 
   toggleTheme: () => set(s => {
