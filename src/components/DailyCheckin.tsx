@@ -120,7 +120,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
     if (defaultDailyAmt > 0) {
       text += `  🌼${defaultDailyAmt.toLocaleString()}/วัน🌼\n`
     }
-    text += `.........................................\n\n`
+    text += `.........................................\n`
     
     daysData.forEach(d => {
       if (d.isMonthHeader) {
