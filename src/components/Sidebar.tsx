@@ -9,7 +9,7 @@ const navItems = [
   { path: '/agents', label: 'คุมสายส่ง', icon: '🤝', section: 'หลัก' },
   { path: '/loans', label: 'รายการสินเชื่อ', icon: '📋', section: 'หลัก' },
   { path: '/add-loan', label: 'เพิ่มสินเชื่อใหม่', icon: '➕', section: 'หลัก' },
-  { path: '/payments', label: 'วิเคราะห์การคืนทุน', icon: '📉', section: 'การเงิน' },
+  { path: '/payments', label: 'เครื่องมือคำนวณ', icon: '📉', section: 'การเงิน' },
   { path: '/reports', label: 'รายงาน', icon: '📊', section: 'การเงิน' },
 ]
 

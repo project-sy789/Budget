@@ -160,7 +160,7 @@ export default function Payments() {
       </div>
 
       <div className="page-content">
-        <div className="add-loan-grid" style={{ gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+        <div className="analysis-grid">
           <div className="card-section" style={{ height: 'fit-content' }}>
             <div className="section-title-main" style={{ marginBottom: 20 }}>⚙️ ตั้งค่าการจำลอง</div>
             

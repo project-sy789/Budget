@@ -11,7 +11,7 @@ const navItems: NavItem[] = [
   { path: '/agents', label: 'สายส่ง', icon: '🤝' },
   { path: '/loans', label: 'สินเชื่อ', icon: '📋' },
   { path: '/add-loan', label: 'เพิ่ม', icon: '➕' },
-  { path: '/payments', label: 'จ่ายเงิน', icon: '💳' },
+  { path: '/payments', label: 'เครื่องมือคำนวณ', icon: '📉' },
   { path: '/reports', label: 'รายงาน', icon: '📊' },
 ]
 

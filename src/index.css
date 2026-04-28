@@ -697,6 +697,20 @@ tr.row-restructured td:first-child { border-left: 4px solid var(--warning); }
   top: 24px;
 }
 
+/* Analysis Grid */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Improved Card Sections */
 .card-section {
   background: var(--bg-card);
