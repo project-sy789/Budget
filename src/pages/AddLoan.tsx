@@ -66,6 +66,22 @@ export default function AddLoan() {
   const [totalRepay, setTotalRepay] = useState('')
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
   const [dueDays, setDueDays] = useState('')
+  const [isAddingNewAgent, setIsAddingNewAgent] = useState(false)
+
+  // Extract unique agent names from existing loans
+  const existingAgents = useMemo(() => {
+    const names = loans
+      .map(l => l.agent_name)
+      .filter(name => name && name.trim() !== '')
+    return [...new Set(names)].sort()
+  }, [loans])
+
+  // Initialize isAddingNewAgent if agent name not in list (for edit mode)
+  useEffect(() => {
+    if (isEdit && form.agent_name && !existingAgents.includes(form.agent_name)) {
+      setIsAddingNewAgent(true)
+    }
+  }, [isEdit, existingAgents])
 
   const isEdit = !!id
 
@@ -438,7 +454,53 @@ export default function AddLoan() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">สายส่ง (Agent)</label>
-                  <input className="form-input" value={form.agent_name} onChange={e => set('agent_name', e.target.value)} placeholder="ชื่อคนดูแลเคสนี้ (เช่น จูน)" />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {!isAddingNewAgent && existingAgents.length > 0 ? (
+                      <>
+                        <select 
+                          className="form-select" 
+                          value={form.agent_name} 
+                          onChange={e => set('agent_name', e.target.value)}
+                        >
+                          <option value="">-- เลือกสายส่ง --</option>
+                          {existingAgents.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-icon" 
+                          onClick={() => {
+                            setIsAddingNewAgent(true)
+                            set('agent_name', '')
+                          }}
+                          title="เพิ่มสายส่งใหม่"
+                        >
+                          ➕
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <input 
+                          className="form-input" 
+                          value={form.agent_name} 
+                          onChange={e => set('agent_name', e.target.value)} 
+                          placeholder="ชื่อคนดูแลเคสนี้ (เช่น จูน)" 
+                          autoFocus={isAddingNewAgent}
+                        />
+                        {(isAddingNewAgent || existingAgents.length === 0) && existingAgents.length > 0 && (
+                          <button 
+                            type="button" 
+                            className="btn btn-secondary btn-icon" 
+                            onClick={() => setIsAddingNewAgent(false)}
+                            title="กลับไปเลือกที่มีอยู่"
+                          >
+                            🔙
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="form-grid-2">
