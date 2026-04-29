@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { formatBaht, formatDate, isOverdue, loanTypeLabel, loanTypeBadgeClass, statusBadgeClass, statusLabel } from '../lib/formatters'
 import { calcDailyFlat, calcRemainingBalance } from '../lib/calculations'
-import { differenceInDays, parseISO } from 'date-fns'
+import { differenceInDays, parseISO, addDays, format } from 'date-fns'
 import PaymentModal from '../components/PaymentModal'
 import DailyCheckin from '../components/DailyCheckin'
 import RestructureModal from '../components/RestructureModal'
@@ -49,21 +49,40 @@ export default function LoanDetail() {
   const progressPct = Math.min((paidPrincipal / loan.principal) * 100, 100)
   const overdue = loan.status === 'active' && isOverdue(loan.due_date)
  
-  const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, daysElapsed)
-  
-  // Smart Accrued Interest: If we have installments, calculate based on that to avoid division artifacts
-  let accruedInterest = 0
-  if (loan.interest_period === 'daily') {
-    // For daily loans, the rate is already per day
-    const dailyInterest = (loan.principal * loan.interest_rate) / 100
-    accruedInterest = dailyInterest * daysElapsed
-  } else if (loan.installments && loan.installments > 0) {
-    const totalInterest = (loan.principal * loan.interest_rate) / 100
-    const interestPerInst = totalInterest / loan.installments
-    accruedInterest = interestPerInst * daysElapsed
-  } else {
-    accruedInterest = dailyInfo.totalInterest
-  }
+  // 💡 Smart Accrued Interest Calculation (Daily Accrual Logic)
+  const accruedInterest = useMemo(() => {
+    // For non-daily periods (weekly/monthly flat-rate with installments)
+    if (loan.interest_period !== 'daily' && loan.installments && loan.installments > 0) {
+      const totalInterest = (loan.principal * loan.interest_rate) / 100
+      const interestPerInst = totalInterest / loan.installments
+      return interestPerInst * Math.min(daysElapsed, loan.installments)
+    }
+
+    // For Daily Flat/Naive Interest (Iterate day by day to check remaining principal)
+    const dailyRate = loan.interest_rate / 100
+    let totalAccrued = 0
+    const start = parseISO(loan.start_date)
+
+    for (let i = 0; i < daysElapsed; i++) {
+      const currentDate = addDays(start, i)
+      const dStr = format(currentDate, 'yyyy-MM-dd')
+
+      // Calculate principal paid STRICTLY BEFORE this day
+      // (Interest is charged for the day the borrower possesses the capital)
+      const principalPaidBefore = loanPayments
+        .filter(p => p.payment_date < dStr)
+        .reduce((sum, p) => sum + (p.principal_paid || 0), 0)
+      
+      const currentPrincipal = Math.max(0, loan.principal - principalPaidBefore)
+      if (currentPrincipal > 0) {
+        totalAccrued += currentPrincipal * dailyRate
+      } else {
+        // Stop accruing interest the day after the principal reaches zero
+        break
+      }
+    }
+    return totalAccrued
+  }, [loan, loanPayments, daysElapsed])
 
   const outstandingInterest = Math.max(accruedInterest - paidInterest, 0)
 
@@ -258,7 +277,7 @@ export default function LoanDetail() {
             <div className="section-title">🧮 คำนวณดอกเบี้ยสะสม</div>
             {[
               { label: 'วันที่ผ่านมา', value: `${daysElapsed} วัน` },
-              { label: 'ดอกเบี้ยต่อวัน', value: formatBaht(dailyInfo.dailyInterest) },
+              { label: 'ดอกเบี้ยต่อวัน', value: formatBaht((loan.principal * loan.interest_rate) / 100) },
               { label: 'ดอกเบี้ยสะสมทั้งหมด', value: formatBaht(accruedInterest) },
               { label: 'รับดอกไปแล้ว', value: formatBaht(paidInterest) },
               { label: 'ดอกค้างรับ', value: formatBaht(outstandingInterest) },
