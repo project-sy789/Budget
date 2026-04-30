@@ -168,7 +168,7 @@ export const useStore = create<AppState>((set) => ({
   },
   
   restructureLoan: async (oldId, data) => {
-    const { loans } = useStore.getState()
+    const { loans, payments } = useStore.getState()
     const oldLoan = loans.find(l => l.id === oldId)
     if (!oldLoan) return
 
