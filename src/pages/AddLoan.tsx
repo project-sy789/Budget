@@ -599,18 +599,11 @@ export default function AddLoan() {
                       className="form-select" 
                       value={form.interest_period} 
                       onChange={e => set('interest_period', e.target.value)}
-                      disabled={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(form.loan_type)}
-                      style={['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(form.loan_type) ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : {}}
                     >
                       {PERIODS.map(p => (
                         <option key={p.value} value={p.value}>{p.label}</option>
                       ))}
                     </select>
-                    {['daily', 'weekly', 'monthly', 'yearly', 'upfront', 'bullet', 'reducing'].includes(form.loan_type) && (
-                      <div className="form-hint" style={{ marginTop: 4, fontSize: '0.7rem', color: 'var(--info)' }}>
-                        💡 ล็อกตามประเภทสินเชื่อที่เลือก
-                      </div>
-                    )}
                   </div>
 
                   {interestMode !== 'percent' && (
