@@ -22,13 +22,10 @@ export default function DailyCheckin({ loan, payments }: Props) {
   // Calculate default daily amount
   const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
   const defaultDailyAmt = useMemo(() => {
-    if (loan.loan_type === 'bullet') {
-      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
-      // dailyInfo.dailyInterest is (principal * rate / 100 / period)
-      return loan.principal + (dailyInfo.dailyInterest * contractDays)
-    }
+    // For ALL loans in a daily grid, we usually want to track the daily interest/installment
+    // If it's a bullet loan, the 'daily' check-in is usually just for interest
     return loan.installment_amount || (dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0)
-  }, [loan, dailyInfo, startDate, dueDate])
+  }, [loan, dailyInfo])
 
   const daysData = useMemo(() => {
     const data = []
@@ -151,7 +148,13 @@ export default function DailyCheckin({ loan, payments }: Props) {
       }
     })
     
-    text += `\nรวมยอด ${loan.principal.toLocaleString()} 💸\n\n`
+    let totalToRepay = loan.principal
+    if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
+      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
+      totalToRepay = loan.principal + (dailyInfo.dailyInterest * contractDays)
+    }
+
+    text += `\nรวมยอด ${totalToRepay.toLocaleString()} 💸\n\n`
     text += `🕑ส่งยอด 20.30 น.`
     
     return text

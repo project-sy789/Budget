@@ -67,17 +67,22 @@ export const useStore = create<AppState>((set) => ({
       const { payments } = useStore.getState()
       if (payments.length > 0) {
         data.forEach(async (l) => {
+          const loanPayments = payments.filter(p => p.loan_id === l.id)
+          const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+          const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+          const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day)
+
           if (l.status === 'active' || l.status === 'overdue') {
-            const loanPayments = payments.filter(p => p.loan_id === l.id)
-            const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-            const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
-            
-            const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day)
-            
             // จบยอดคือจ่ายครบต้นดอก (Allow 1 baht rounding error)
             if (paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0) {
               await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
+            }
+          } else if (l.status === 'closed') {
+            // Re-open if debt still exists (allow 5 baht margin for rounding)
+            if (paidPrincipal < l.principal || paidInterest < (accruedInt - 5)) {
+              await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
             }
           }
         })
