@@ -47,7 +47,10 @@ export default function LoanDetail() {
   const remaining = calcRemainingBalance(loan.principal, paidPrincipal)
   const daysElapsed = differenceInDays(new Date(), parseISO(loan.start_date))
   const progressPct = Math.min((paidPrincipal / loan.principal) * 100, 100)
-  const overdue = loan.status === 'active' && isOverdue(loan.due_date)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
+  const isPrincipalPaid = paidPrincipal >= loan.principal && loan.principal > 0
+  const overdue = loan.status === 'active' && isOverdue(loan.due_date) && !hasPaidToday && !isPrincipalPaid
  
   // 💡 Smart Accrued Interest Calculation (Daily Accrual Logic)
   const accruedInterest = useMemo(() => {

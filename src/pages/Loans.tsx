@@ -104,9 +104,13 @@ export default function Loans() {
                   const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
                   const isPrincipalPaid = paidPrincipal >= loan.principal && loan.principal > 0
 
+                  // Check if paid today
+                  const todayStr = new Date().toISOString().slice(0, 10)
+                  const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
+
                   // Check if missed daily payment yesterday
                   let missedYesterday = false
-                  if (loan.status === 'active' && loan.loan_type === 'daily' && !isPrincipalPaid) {
+                  if (loan.status === 'active' && loan.loan_type === 'daily' && !isPrincipalPaid && !hasPaidToday) {
                     const yesterday = new Date()
                     yesterday.setDate(yesterday.getDate() - 1)
                     const yesterdayStr = yesterday.toISOString().slice(0, 10)
@@ -117,7 +121,10 @@ export default function Loans() {
                     }
                   }
 
-                  const isActuallyOverdue = loan.status === 'overdue' || (loan.status === 'active' && (overdueByDate || missedYesterday))
+                  const isActuallyOverdue = !isPrincipalPaid && (
+                    loan.status === 'overdue' || 
+                    (loan.status === 'active' && (overdueByDate || missedYesterday) && !hasPaidToday)
+                  )
                   
                   const rowClass = isActuallyOverdue ? 'row-overdue' 
                     : loan.status === 'closed' ? 'row-closed' 
