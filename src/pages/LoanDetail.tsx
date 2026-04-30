@@ -166,7 +166,15 @@ export default function LoanDetail() {
           <div className="kpi-card gold">
             <div className="kpi-label">เงินต้น</div>
             <div className="kpi-value gold" style={{ fontSize: '1.3rem' }}>{formatBaht(loan.principal)}</div>
-            <div className="kpi-sub">{loan.interest_rate}% / {loan.interest_period === 'daily' ? 'วัน' : loan.interest_period === 'weekly' ? 'อาทิตย์' : 'เดือน'}</div>
+            <div className="kpi-sub">
+              {(() => {
+                let daily = loan.interest_rate
+                if (loan.interest_period === 'weekly') daily = loan.interest_rate / 7
+                if (loan.interest_period === 'monthly') daily = loan.interest_rate / 30
+                if (loan.interest_period === 'yearly') daily = loan.interest_rate / 365
+                return `${daily.toFixed(2)}% / วัน`
+              })()}
+            </div>
           </div>
           <div className="kpi-card success">
             <div className="kpi-label">คืนต้นแล้ว</div>

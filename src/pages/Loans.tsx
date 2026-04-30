@@ -159,7 +159,15 @@ export default function Loans() {
                       </td>
                       <td><span className={`badge ${loanTypeBadgeClass(loan.loan_type)}`}>{loanTypeLabel(loan.loan_type)}</span></td>
                       <td className="td-amount td-gold">{formatBaht(loan.principal)}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{loan.interest_rate}% / {loan.interest_period === 'daily' ? 'วัน' : loan.interest_period === 'weekly' ? 'อาทิตย์' : loan.interest_period === 'monthly' ? 'เดือน' : 'ปี'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>
+                        {(() => {
+                          let daily = loan.interest_rate
+                          if (loan.interest_period === 'weekly') daily = loan.interest_rate / 7
+                          if (loan.interest_period === 'monthly') daily = loan.interest_rate / 30
+                          if (loan.interest_period === 'yearly') daily = loan.interest_rate / 365
+                          return `${daily.toFixed(2)}% / วัน`
+                        })()}
+                      </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{formatDate(loan.start_date)}</td>
                       <td style={{ color: isActuallyOverdue ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: isActuallyOverdue ? 700 : 400 }}>
                         {formatDate(loan.due_date)}
