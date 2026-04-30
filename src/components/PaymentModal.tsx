@@ -31,9 +31,9 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
     setAmount(v)
     const a = parseFloat(v) || 0
     
-    // PRINCIPAL-FIRST LOGIC: Cut principal until it's 0
-    const p = Math.min(remainingPrincipal, a)
-    const i = Math.max(0, a - p)
+    // INTEREST-FIRST LOGIC: Cut interest until it's 0
+    const i = Math.min(accruedInterest, a)
+    const p = Math.max(0, a - i)
     
     setPrincipalPaid(p.toFixed(2))
     setInterestPaid(i.toFixed(2))
@@ -111,7 +111,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
               />
               {!isClosing && (
                 <div className="form-hint" style={{ color: 'var(--success)', fontWeight: 500, marginTop: 4 }}>
-                  ✨ ระบบจะนำไปหัก "เงินต้น" ให้ก่อนจนกว่าจะหมด
+                  ✨ ระบบจะนำไปหัก "ดอกเบี้ย" ให้ก่อนจนกว่าจะหมด
                 </div>
               )}
             </div>

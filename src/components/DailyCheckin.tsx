@@ -97,18 +97,26 @@ export default function DailyCheckin({ loan, payments }: Props) {
     let interestPaid = 0
     let principalPaid = 0
 
-    // PRINCIPAL-FIRST LOGIC: Focus on recovering capital for safety
-    const totalPaidPrincipal = payments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-    const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
-
-    if (remainingPrincipal > 0) {
-      // If there's still principal to recover, use the payment for principal first
-      principalPaid = Math.min(defaultDailyAmt, remainingPrincipal)
-      interestPaid = Math.max(0, defaultDailyAmt - principalPaid)
+    // INTEREST-FIRST LOGIC: Pay off accrued interest before capital
+    // Calculate total interest owed based on loan type
+    let totalOwedInterest = 0
+    if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
+      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
+      totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * contractDays
     } else {
-      // If principal is already fully recovered, everything is interest profit
-      principalPaid = 0
-      interestPaid = defaultDailyAmt
+      const daysElapsed = Math.max(0, differenceInDays(new Date(), startDate))
+      totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * daysElapsed
+    }
+
+    const totalPaidInterest = payments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+    const outstandingInterest = Math.max(0, totalOwedInterest - totalPaidInterest)
+
+    if (outstandingInterest > 0) {
+      interestPaid = Math.min(defaultDailyAmt, outstandingInterest)
+      principalPaid = Math.max(0, defaultDailyAmt - interestPaid)
+    } else {
+      interestPaid = 0
+      principalPaid = defaultDailyAmt
     }
 
     await addPayment({
