@@ -21,29 +21,31 @@ export default function Dashboard() {
   }, [])
 
   const stats = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    
     const active = loans.filter(l => {
-      if (l.status !== 'active') return false
-      const loanPayments = payments.filter(p => p.loan_id === l.id)
-      const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-      return paidPrincipal < l.principal
+      return l.status === 'active' || l.status === 'overdue'
     })
     
     const overdue = active.filter(l => {
       const loanPayments = payments.filter(p => p.loan_id === l.id)
-      const todayStr = format(new Date(), 'yyyy-MM-dd')
+      const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      const isPrincipalPaid = paidPrincipal >= l.principal && l.principal > 0
+      if (isPrincipalPaid) return false
+
+      const isPastDue = todayStr >= l.due_date
       const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
-      return isOverdue(l.due_date) && !hasPaidToday
+      return isPastDue && !hasPaidToday
     })
+
     const totalPrincipal = active.reduce((s, l) => s + l.principal, 0)
 
     const todayInterest = active.reduce((s, l) => {
-      // If it's a flat daily loan with set installments, the rate is usually the total rate for the term
-      if (l.loan_type === 'daily' && l.installments && l.installments > 0) {
-        const totalInterest = (l.principal * l.interest_rate) / 100
-        const dailyInterest = totalInterest / l.installments
-        return s + dailyInterest
-      }
-      
+      // If principal is already paid, no interest for today (standardizing)
+      const loanPayments = payments.filter(p => p.loan_id === l.id)
+      const paidPrincipal = loanPayments.reduce((sum, p) => sum + (p.principal_paid || 0), 0)
+      if (paidPrincipal >= l.principal && l.principal > 0) return s
+
       const r = calcDailyFlat(l.principal, l.interest_rate, l.interest_period, 1)
       return s + r.dailyInterest
     }, 0)
