@@ -17,7 +17,8 @@ import './index.css'
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn())
-  const { loans, fetchLoans, fetchAgents, subscribeToAll, theme } = useStore()
+  const { loans, payments, fetchLoans, fetchPayments, fetchAgents, subscribeToAll, theme } = useStore()
+  const [todayStr] = useState(new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
     if (theme === 'light') {
@@ -30,6 +31,7 @@ export default function App() {
   useEffect(() => {
     if (authed) {
       fetchLoans()
+      fetchPayments()
       fetchAgents?.()
       const unsubscribe = subscribeToAll()
       return () => unsubscribe()
@@ -37,8 +39,19 @@ export default function App() {
   }, [authed])
 
   const overdueCount = loans.filter(l => {
-    if (l.status !== 'active') return false
-    return new Date() > new Date(l.due_date)
+    if (l.status !== 'active' && l.status !== 'overdue') return false
+    
+    // Check if principal is already fully paid
+    const loanPayments = payments.filter(p => p.loan_id === l.id)
+    const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+    const isPrincipalPaid = paidPrincipal >= l.principal && l.principal > 0
+    if (isPrincipalPaid) return false
+
+    // Overdue logic: Today is on or after due date, and hasn't paid today
+    const isPastDue = todayStr >= l.due_date
+    const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
+    
+    return isPastDue && !hasPaidToday
   }).length
 
   if (!authed) return <Login onLogin={() => setAuthed(true)} />
