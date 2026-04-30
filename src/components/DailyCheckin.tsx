@@ -21,7 +21,14 @@ export default function DailyCheckin({ loan, payments }: Props) {
   
   // Calculate default daily amount
   const dailyInfo = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
-  const defaultDailyAmt = loan.installment_amount || (dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0)
+  const defaultDailyAmt = useMemo(() => {
+    if (loan.loan_type === 'bullet') {
+      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
+      // dailyInfo.dailyInterest is (principal * rate / 100 / period)
+      return loan.principal + (dailyInfo.dailyInterest * contractDays)
+    }
+    return loan.installment_amount || (dailyInfo.dailyInterest > 0 ? dailyInfo.dailyInterest : 0)
+  }, [loan, dailyInfo, startDate, dueDate])
 
   const daysData = useMemo(() => {
     const data = []

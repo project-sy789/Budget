@@ -108,7 +108,21 @@ export const useStore = create<AppState>((set) => ({
 
   addPayment: async (payment) => {
     const { data } = await supabase.from('payments').insert([payment]).select().single()
-    if (data) set(s => ({ payments: [data, ...s.payments] }))
+    if (data) {
+      set(s => ({ payments: [data, ...s.payments] }))
+      
+      // 🏁 Auto-close loan if principal is fully paid
+      const { loans, payments } = useStore.getState()
+      const loan = loans.find(l => l.id === payment.loan_id)
+      if (loan && (loan.status === 'active' || loan.status === 'overdue')) {
+        const loanPayments = [data, ...payments.filter(p => p.loan_id === loan.id)]
+        const totalPaid = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+        if (totalPaid >= loan.principal) {
+          await supabase.from('loans').update({ status: 'closed' }).eq('id', loan.id)
+          set(s => ({ loans: s.loans.map(l => l.id === loan.id ? { ...l, status: 'closed' } : l) }))
+        }
+      }
+    }
   },
 
   deletePayment: async (id) => {
