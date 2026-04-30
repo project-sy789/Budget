@@ -160,9 +160,9 @@ export default function AddLoan() {
           const d1 = new Date(start); const d2 = new Date(end)
           const diff = Math.ceil((d2.getTime() - d1.getTime()) / 86400000)
           let inst = 0
-          if (type === 'weekly') inst = Math.ceil(diff / 7)
-          else inst = Math.ceil(diff / 30) // monthly/reducing
-          if (inst > 0) setForm(f => ({ ...f, installments: inst.toString() }))
+          if (type === 'weekly') inst = Math.max(1, Math.ceil(diff / 7))
+          else inst = Math.max(1, Math.ceil(diff / 30)) // monthly/reducing
+          setForm(f => ({ ...f, installments: inst.toString() }))
         }
       } else if (key === 'installments') {
         const start = form.start_date; const inst = parseInt(val as string) || 0
