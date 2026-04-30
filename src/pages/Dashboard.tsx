@@ -50,7 +50,6 @@ export default function Dashboard() {
       return s + r.dailyInterest
     }, 0)
 
-    const todayStr = format(new Date(), 'yyyy-MM-dd')
     const todayPayments = payments.filter(p => p.payment_date === todayStr)
     const todayRealizedInterest = todayPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
 
