@@ -81,7 +81,6 @@ export const useStore = create<AppState>((set) => ({
             }
           } else if (l.status === 'closed') {
             // Re-open ONLY if principal is missing. 
-            // We trust the 'closed' status for interest because interest stops on the day of closing.
             if (paidPrincipal < l.principal && l.principal > 0) {
               await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
