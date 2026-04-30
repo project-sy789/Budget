@@ -30,12 +30,16 @@ export default function DailyCheckin({ loan, payments }: Props) {
     
     let curr = new Date(startDate)
     curr.setHours(0, 0, 0, 0)
-    const end = new Date(dueDate)
-    end.setHours(0, 0, 0, 0)
+    const contractualEnd = new Date(dueDate)
+    contractualEnd.setHours(0, 0, 0, 0)
+    
+    // Show up to today if it's past due date
+    const displayEnd = isAfter(today, contractualEnd) ? today : contractualEnd
+    displayEnd.setHours(0, 0, 0, 0)
     
     let lastMonth = -1
     let count = 0
-    while (curr <= end && count < 366) {
+    while (curr <= displayEnd && count < 366) {
       const month = curr.getMonth()
       if (month !== lastMonth) {
         data.push({ isMonthHeader: true, label: format(curr, 'MMMM', { locale: th }), id: `m-${month}-${curr.getFullYear()}` })
