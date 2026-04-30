@@ -169,7 +169,7 @@ export default function Reports() {
         paidInterest,
         recoveryRate,
         breakEvenDate,
-        currentProfit: Math.max(0, totalPaid - loan.principal)
+        currentProfit: paidInterest
       }
     }).sort((a, b) => (b.recoveryRate - a.recoveryRate))
   }, [loans, payments])
