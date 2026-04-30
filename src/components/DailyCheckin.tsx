@@ -40,8 +40,9 @@ export default function DailyCheckin({ loan, payments }: Props) {
     const contractualEnd = new Date(dueDate)
     contractualEnd.setHours(0, 0, 0, 0)
     
-    // Show up to today if it's past due date
-    const displayEnd = isAfter(today, contractualEnd) ? today : contractualEnd
+    // Show up to today only if the loan is NOT closed
+    const isClosed = loan.status === 'closed'
+    const displayEnd = (!isClosed && isAfter(today, contractualEnd)) ? today : contractualEnd
     displayEnd.setHours(0, 0, 0, 0)
     
     let lastMonth = -1
