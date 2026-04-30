@@ -17,6 +17,7 @@ interface AppState {
   updateLoan: (id: string, updates: Partial<Loan>) => Promise<void>
   deleteLoan: (id: string) => Promise<void>
   addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
+  updatePayment: (id: string, payment: Partial<Payment>) => Promise<void>
   deletePayment: (id: string) => Promise<void>
   addAgent: (name: string) => Promise<Agent | null>
   updateAgent: (id: string, name: string) => Promise<void>
@@ -167,7 +168,7 @@ export const useStore = create<AppState>((set) => ({
     set(s => ({ payments: s.payments.filter(p => p.id !== id) }))
   },
   
-  updatePayment: async (id, payment) => {
+  updatePayment: async (id: string, payment: Partial<Payment>) => {
     const { data } = await supabase.from('payments').update(payment).eq('id', id).select().single()
     if (data) {
       set(s => ({ payments: s.payments.map(p => p.id === id ? data : p) }))
