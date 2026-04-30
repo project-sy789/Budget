@@ -70,7 +70,7 @@ export const useStore = create<AppState>((set) => ({
           const loanPayments = payments.filter(p => p.loan_id === l.id)
           const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
           const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
-          const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day)
+          const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day, loanPayments)
 
           if (l.status === 'active' || l.status === 'overdue') {
             // จบยอดคือจ่ายครบต้นดอก (Allow 1 baht rounding error)

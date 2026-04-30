@@ -214,22 +214,42 @@ export function calcAccruedInterest(
   period: 'daily' | 'weekly' | 'monthly' | 'yearly',
   startDate: string,
   dueDate: string,
-  includeFirstDay = true
+  includeFirstDay = true,
+  payments: any[] = []
 ): number {
   const start = parseISO(startDate)
   const due = parseISO(dueDate)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
+  const dailyRate = toDaily(rate, period)
+
   if (loanType === 'bullet' || loanType === 'upfront') {
     // Fixed amount for the contract period
     const contractDays = Math.max(1, differenceInDays(due, start) + (includeFirstDay ? 1 : 0))
-    const dailyRate = toDaily(rate, period)
     return principal * dailyRate * contractDays
   } else {
-    // Accumulates daily until today
+    // Accumulates daily until today, but STOPS if principal reaches zero
     const daysElapsed = Math.max(0, differenceInDays(today, start))
-    const dailyRate = toDaily(rate, period)
-    return principal * dailyRate * daysElapsed
+    let totalAccrued = 0
+
+    for (let i = 0; i < daysElapsed; i++) {
+      const currentD = new Date(start)
+      currentD.setDate(start.getDate() + i)
+      const dStr = currentD.toISOString().slice(0, 10)
+
+      // Principal paid BEFORE this day
+      const paidBefore = payments
+        .filter(p => p.payment_date < dStr)
+        .reduce((sum, p) => sum + (p.principal_paid || 0), 0)
+      
+      const currentPrincipal = Math.max(0, principal - paidBefore)
+      if (currentPrincipal > 0) {
+        totalAccrued += principal * dailyRate
+      } else {
+        break
+      }
+    }
+    return totalAccrued
   }
 }
