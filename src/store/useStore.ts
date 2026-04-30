@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import type { Loan, Payment, Agent } from '../lib/supabase'
+import { calcAccruedInterest } from '../lib/calculations'
 
 interface AppState {
   theme: 'dark' | 'light'
@@ -69,7 +70,12 @@ export const useStore = create<AppState>((set) => ({
           if (l.status === 'active' || l.status === 'overdue') {
             const loanPayments = payments.filter(p => p.loan_id === l.id)
             const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-            if (paidPrincipal >= l.principal && l.principal > 0) {
+            const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+            
+            const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day)
+            
+            // จบยอดคือจ่ายครบต้นดอก (Allow 1 baht rounding error)
+            if (paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0) {
               await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
             }
@@ -131,13 +137,18 @@ export const useStore = create<AppState>((set) => ({
     if (data) {
       set(s => ({ payments: [data, ...s.payments] }))
       
-      // 🏁 Auto-close loan if principal is fully paid
+      // 🏁 Auto-close loan if principal + interest is fully paid
       const { loans, payments } = useStore.getState()
       const loan = loans.find(l => l.id === payment.loan_id)
       if (loan && (loan.status === 'active' || loan.status === 'overdue')) {
         const loanPayments = [data, ...payments.filter(p => p.loan_id === loan.id)]
-        const totalPaid = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-        if (totalPaid >= loan.principal) {
+        const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+        const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+        
+        const accruedInt = calcAccruedInterest(loan.loan_type, loan.principal, loan.interest_rate, loan.interest_period, loan.start_date, loan.due_date, loan.include_first_day)
+
+        // จบยอดคือจ่ายครบต้นดอก
+        if (paidPrincipal >= loan.principal && paidInterest >= (accruedInt - 1)) {
           await supabase.from('loans').update({ status: 'closed' }).eq('id', loan.id)
           set(s => ({ loans: s.loans.map(l => l.id === loan.id ? { ...l, status: 'closed' } : l) }))
         }

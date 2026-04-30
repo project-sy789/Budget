@@ -205,3 +205,31 @@ export function calcInterestForRange(
   const dailyRate = toDaily(ratePercent, period)
   return principal * dailyRate * days
 }
+
+/** Unified accrued interest calculation for the whole app */
+export function calcAccruedInterest(
+  loanType: string,
+  principal: number,
+  rate: number,
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly',
+  startDate: string,
+  dueDate: string,
+  includeFirstDay = true
+): number {
+  const start = parseISO(startDate)
+  const due = parseISO(dueDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  if (loanType === 'bullet' || loanType === 'upfront') {
+    // Fixed amount for the contract period
+    const contractDays = Math.max(1, differenceInDays(due, start) + (includeFirstDay ? 1 : 0))
+    const dailyRate = toDaily(rate, period)
+    return principal * dailyRate * contractDays
+  } else {
+    // Accumulates daily until today
+    const daysElapsed = Math.max(0, differenceInDays(today, start))
+    const dailyRate = toDaily(rate, period)
+    return principal * dailyRate * daysElapsed
+  }
+}
