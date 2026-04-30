@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { formatBaht } from '../lib/formatters'
 import type { Loan } from '../lib/supabase'
+import { calcAccruedInterest } from '../lib/calculations'
 
 interface Props {
   loan: Loan
@@ -14,11 +15,26 @@ interface Props {
 
 export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved, isClosing }: Props) {
   const { addPayment, updateLoan } = useStore()
-  const initialAmt = isClosing ? (remainingPrincipal + accruedInterest) : ''
+  
+  // Calculate interest based on the selected date
+  const getAccruedAtDate = (dStr: string) => {
+    return calcAccruedInterest(
+      loan.loan_type, 
+      loan.principal, 
+      loan.interest_rate, 
+      loan.interest_period, 
+      loan.start_date, 
+      dStr, // Calculate up to the payment date
+      loan.include_first_day
+    )
+  }
+
+  const initialAccrued = getAccruedAtDate(new Date().toISOString().slice(0, 10))
+  const initialAmt = isClosing ? (remainingPrincipal + initialAccrued) : ''
   const [amount, setAmount] = useState(initialAmt.toString())
-  const [interestPaid, setInterestPaid] = useState(isClosing ? accruedInterest.toFixed(2) : '0.00')
-  const [principalPaid, setPrincipalPaid] = useState(isClosing ? remainingPrincipal.toFixed(2) : '0.00')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [interestPaid, setInterestPaid] = useState(isClosing ? initialAccrued.toFixed(2) : '0.00')
+  const [principalPaid, setPrincipalPaid] = useState(isClosing ? remainingPrincipal.toFixed(2) : '0.00')
   const [method, setMethod] = useState('cash')
   const [receiptNo, setReceiptNo] = useState('')
   const [notes, setNotes] = useState(isClosing ? 'ปิดยอดก่อนกำหนด' : '')
@@ -27,13 +43,25 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
   const amt = parseFloat(amount) || 0
   const interest = parseFloat(interestPaid) || 0
 
-  const handleAmountChange = (v: string) => {
+  const handleAmountChange = (v: string, customDate?: string) => {
     setAmount(v)
     const a = parseFloat(v) || 0
+    const activeDate = customDate || date
+    const accruedAtDate = getAccruedAtDate(activeDate)
     
-    // INTEREST-FIRST LOGIC: Cut interest until it's 0
-    const i = Math.min(accruedInterest, a)
-    const p = Math.max(0, a - i)
+    let p = 0
+    let i = 0
+
+    if (isClosing) {
+      // In CLOSING mode, we want to make sure the principal is cleared.
+      // So we take the principal first, and the rest is interest.
+      p = Math.min(a, remainingPrincipal)
+      i = Math.max(0, a - p)
+    } else {
+      // Regular payment: INTEREST-FIRST LOGIC
+      i = Math.min(accruedAtDate, a)
+      p = Math.max(0, a - i)
+    }
     
     setPrincipalPaid(p.toFixed(2))
     setInterestPaid(i.toFixed(2))
@@ -85,7 +113,16 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
             <div className="form-row stack-on-ipad">
               <div className="form-group">
                 <label className="form-label">วันที่ชำระ</label>
-                <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+                <input 
+                  className="form-input" 
+                  type="date" 
+                  value={date} 
+                  onChange={e => {
+                    setDate(e.target.value)
+                    handleAmountChange(amount, e.target.value)
+                  }} 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">วิธีชำระ</label>
