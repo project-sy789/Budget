@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { format, isToday, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { supabase } from '../lib/supabase'
+import { calcDailyFlat, calcAccruedInterest } from '../lib/calculations'
 
 export default function Agents() {
   const { loans, payments, addPayment, agents: storeAgents, updateAgent, deleteAgent } = useStore()
@@ -51,24 +52,43 @@ export default function Agents() {
   }, [agentLoans, payments])
 
   const handleQuickPay = async (loan: any) => {
-    const dailyAmt = loan.installment_amount || 0
+    let dailyAmt = loan.installment_amount || 0
+    if (dailyAmt <= 0) {
+      const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+      dailyAmt = info.dailyInterest
+    }
+
     if (dailyAmt <= 0) return
 
     setChecking(loan.id)
     
-    // Principal-First logic
+    // INTEREST-FIRST logic (Standardized)
     const loanPayments = payments.filter(p => p.loan_id === loan.id)
-    const totalPaidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
-    const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
+    const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+    
+    // Total interest accrued up to today
+    const accruedAtDate = calcAccruedInterest(
+      loan.loan_type, 
+      loan.principal, 
+      loan.interest_rate, 
+      loan.interest_period, 
+      loan.start_date, 
+      format(new Date(), 'yyyy-MM-dd'), 
+      loan.include_first_day,
+      loanPayments
+    )
+    
+    const outstandingInterest = Math.max(0, accruedAtDate - paidInterest)
 
     let principalPaid = 0
     let interestPaid = 0
 
-    if (remainingPrincipal > 0) {
-      principalPaid = Math.min(dailyAmt, remainingPrincipal)
-      interestPaid = Math.max(0, dailyAmt - principalPaid)
+    if (outstandingInterest > 0) {
+      interestPaid = Math.min(dailyAmt, outstandingInterest)
+      principalPaid = Math.max(0, dailyAmt - interestPaid)
     } else {
-      interestPaid = dailyAmt
+      interestPaid = 0
+      principalPaid = dailyAmt
     }
 
     await addPayment({
@@ -238,7 +258,13 @@ export default function Agents() {
                             <div className="td-sub">{loan.borrower_phone}</div>
                           </td>
                           <td>{formatBaht(loan.principal)}</td>
-                          <td className="td-gold">{formatBaht(loan.installment_amount || 0)}</td>
+                          <td className="td-gold">
+                            {(() => {
+                              if (loan.installment_amount && loan.installment_amount > 0) return formatBaht(loan.installment_amount)
+                              const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+                              return formatBaht(info.dailyInterest)
+                            })()}
+                          </td>
                           <td>
                             {hasPaid ? (
                               <span className="badge badge-success">✅ รับยอดแล้ว</span>
