@@ -151,7 +151,7 @@ export const useStore = create<AppState>((set) => ({
         const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
         const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
         
-        const accruedInt = calcAccruedInterest(loan.loan_type, loan.principal, loan.interest_rate, loan.interest_period, loan.start_date, loan.due_date, loan.include_first_day)
+        const accruedInt = calcAccruedInterest(loan.loan_type, loan.principal, loan.interest_rate, loan.interest_period, loan.start_date, loan.due_date, loan.include_first_day, loanPayments)
 
         // จบยอดคือจ่ายครบต้นดอก
         if (paidPrincipal >= loan.principal && paidInterest >= (accruedInt - 1)) {
@@ -172,12 +172,21 @@ export const useStore = create<AppState>((set) => ({
     const oldLoan = loans.find(l => l.id === oldId)
     if (!oldLoan) return
 
-    // 1. Record closing payment for old loan
+    // 1. Record closing payment for old loan (PRINCIPAL-FIRST to ensure closure)
     if (data.closing_amount > 0) {
+      const loanPayments = payments.filter(p => p.loan_id === oldId)
+      const paidPrincipalBefore = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      const neededPrincipal = Math.max(0, oldLoan.principal - paidPrincipalBefore)
+      
+      const pPaid = Math.min(data.closing_amount, neededPrincipal)
+      const iPaid = Math.max(0, data.closing_amount - pPaid)
+
       await supabase.from('payments').insert([{
         loan_id: oldId,
         amount: data.closing_amount,
         payment_date: data.closing_date,
+        principal_paid: pPaid,
+        interest_paid: iPaid,
         payment_method: 'transfer',
         notes: 'ปิดยอดเพื่อปรับโครงสร้าง/เปิดใหม่'
       }])
