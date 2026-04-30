@@ -85,19 +85,8 @@ export default function DailyCheckin({ loan, payments }: Props) {
 
   const handleQuickPay = async (dateStr: string, hasPayments: boolean) => {
     if (hasPayments) return
-    if (defaultDailyAmt <= 0) {
-      alert('ไม่สามารถเพิ่มอัตโนมัติได้ เนื่องจากไม่พบยอดส่งรายวันที่ชัดเจน')
-      return
-    }
-    
-    if (!confirm(`บันทึกชำระเงินสด ${formatBaht(defaultDailyAmt)} สำหรับวันที่ ${format(parseISO(dateStr), 'd MMM', { locale: th })} ใช่หรือไม่?`)) return
-    
-    setSavingDate(dateStr)
-    
-    let interestPaid = 0
-    let principalPaid = 0
-
-    // INTEREST-FIRST LOGIC: Pay off accrued interest before capital
+    const totalPaidPrincipal = payments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+    const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
     // Calculate total interest owed based on loan type
     let totalOwedInterest = 0
     if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
@@ -111,18 +100,30 @@ export default function DailyCheckin({ loan, payments }: Props) {
     const totalPaidInterest = payments.reduce((s, p) => s + (p.interest_paid || 0), 0)
     const outstandingInterest = Math.max(0, totalOwedInterest - totalPaidInterest)
 
+    // For Bullet loans, always pay the full remaining balance
+    const amountToPay = loan.loan_type === 'bullet' ? (remainingPrincipal + outstandingInterest) : defaultDailyAmt
+    if (amountToPay <= 0) return
+
+    if (!confirm(`บันทึกชำระเงินสด ${formatBaht(amountToPay)} สำหรับวันที่ ${format(parseISO(dateStr), 'd MMM', { locale: th })} ใช่หรือไม่?`)) return
+    
+    setSavingDate(dateStr)
+    
+    let interestPaid = 0
+    let principalPaid = 0
+
+    // INTEREST-FIRST ALLOCATION
     if (outstandingInterest > 0) {
-      interestPaid = Math.min(defaultDailyAmt, outstandingInterest)
-      principalPaid = Math.max(0, defaultDailyAmt - interestPaid)
+      interestPaid = Math.min(amountToPay, outstandingInterest)
+      principalPaid = Math.max(0, amountToPay - interestPaid)
     } else {
       interestPaid = 0
-      principalPaid = defaultDailyAmt
+      principalPaid = amountToPay
     }
 
     await addPayment({
       loan_id: loan.id,
       payment_date: dateStr,
-      amount: defaultDailyAmt,
+      amount: amountToPay,
       interest_paid: Number(interestPaid.toFixed(2)),
       principal_paid: Number(principalPaid.toFixed(2)),
       payment_method: 'cash',
