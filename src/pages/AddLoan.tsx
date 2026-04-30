@@ -132,8 +132,8 @@ export default function AddLoan() {
         }
       }
 
-      // Sync interest if mode is total and principal/dates change
-      if (interestMode === 'total' && (key === 'principal' || key === 'due_date' || key === 'start_date')) {
+      // Sync interest if mode is total and principal/dates/installments change
+      if (interestMode === 'total' && (key === 'principal' || key === 'due_date' || key === 'start_date' || key === 'installments')) {
         setTimeout(() => syncFromTotal(newForm), 0)
       }
 
@@ -154,22 +154,31 @@ export default function AddLoan() {
   const syncFromTotal = (currentForm: FormData) => {
     const total = parseFloat(totalRepay) || 0
     const p = parseFloat(currentForm.principal) || 0
-    if (p > 0 && total > p && currentForm.start_date && currentForm.due_date) {
-      const start = new Date(currentForm.start_date)
-      const end = new Date(currentForm.due_date)
-      const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
-      
+    const inst = parseInt(currentForm.installments) || 1
+    
+    if (p > 0 && total > p) {
       const totalInterest = total - p
-      let dailyAmt = 0
-      
-      // Calculate daily/weekly/monthly based on interest_period
-      if (currentForm.interest_period === 'daily') dailyAmt = totalInterest / diffDays
-      else if (currentForm.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
-      else if (currentForm.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
-      else dailyAmt = totalInterest / (diffDays / 365)
+      let ratePerPeriod = 0
 
-      setInterestAmount(dailyAmt.toFixed(2))
-      setForm(f => ({ ...f, interest_rate: ((dailyAmt / p) * 100).toFixed(4) }))
+      // If it's installment-based, calculate rate per installment
+      if (['weekly', 'monthly', 'reducing'].includes(currentForm.loan_type)) {
+        const interestPerInst = totalInterest / inst
+        ratePerPeriod = (interestPerInst / p) * 100
+      } else if (currentForm.start_date && currentForm.due_date) {
+        const start = new Date(currentForm.start_date)
+        const end = new Date(currentForm.due_date)
+        const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
+        
+        let dailyAmt = 0
+        if (currentForm.interest_period === 'daily') dailyAmt = totalInterest / diffDays
+        else if (currentForm.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
+        else if (currentForm.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
+        else dailyAmt = totalInterest / (diffDays / 365)
+        
+        ratePerPeriod = (dailyAmt / p) * 100
+      }
+
+      setForm(f => ({ ...f, interest_rate: ratePerPeriod.toFixed(4) }))
     }
   }
 
@@ -184,23 +193,7 @@ export default function AddLoan() {
 
   const handleTotalRepayChange = (val: string) => {
     setTotalRepay(val)
-    const total = parseFloat(val) || 0
-    const p = parseFloat(form.principal) || 0
-    if (p > 0 && total > p && form.start_date && form.due_date) {
-      const start = new Date(form.start_date)
-      const end = new Date(form.due_date)
-      const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
-      
-      const totalInterest = total - p
-      let dailyAmt = 0
-      if (form.interest_period === 'daily') dailyAmt = totalInterest / diffDays
-      else if (form.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
-      else if (form.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
-      else dailyAmt = totalInterest / (diffDays / 365)
-
-      setInterestAmount(dailyAmt.toFixed(2))
-      setForm(f => ({ ...f, interest_rate: ((dailyAmt / p) * 100).toFixed(4) }))
-    }
+    syncFromTotal(form)
   }
 
   const handleDueDaysChange = (val: string) => {
