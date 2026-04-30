@@ -149,6 +149,31 @@ export default function AddLoan() {
       return newForm
     })
     setErrors(e => ({ ...e, [key]: '' }))
+
+    // 🔄 Sync Dates <-> Installments for installment-based loans
+    if (['weekly', 'monthly', 'reducing'].includes(key === 'loan_type' ? (val as string) : form.loan_type)) {
+      const type = key === 'loan_type' ? (val as string) : form.loan_type
+      if (key === 'due_date' || key === 'start_date' || key === 'loan_type') {
+        const start = key === 'start_date' ? (val as string) : form.start_date
+        const end = key === 'due_date' ? (val as string) : form.due_date
+        if (start && end) {
+          const d1 = new Date(start); const d2 = new Date(end)
+          const diff = Math.ceil((d2.getTime() - d1.getTime()) / 86400000)
+          let inst = 0
+          if (type === 'weekly') inst = Math.ceil(diff / 7)
+          else inst = Math.ceil(diff / 30) // monthly/reducing
+          if (inst > 0) setForm(f => ({ ...f, installments: inst.toString() }))
+        }
+      } else if (key === 'installments') {
+        const start = form.start_date; const inst = parseInt(val as string) || 0
+        if (start && inst > 0) {
+          const d = new Date(start)
+          if (type === 'weekly') d.setDate(d.getDate() + (inst * 7))
+          else d.setMonth(d.getMonth() + inst)
+          setForm(f => ({ ...f, due_date: d.toISOString().split('T')[0] }))
+        }
+      }
+    }
   }
 
   const syncFromTotal = (currentForm: FormData) => {
@@ -204,6 +229,14 @@ export default function AddLoan() {
       d.setDate(d.getDate() + days)
       const newDueDate = d.toISOString().split('T')[0]
       set('due_date', newDueDate)
+      
+      // Also sync installments if needed
+      if (['weekly', 'monthly', 'reducing'].includes(form.loan_type)) {
+        let inst = 0
+        if (form.loan_type === 'weekly') inst = Math.ceil(days / 7)
+        else inst = Math.ceil(days / 30)
+        if (inst > 0) setForm(f => ({ ...f, installments: inst.toString() }))
+      }
     }
   }
 
