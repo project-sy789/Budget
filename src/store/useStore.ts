@@ -171,6 +171,22 @@ export const useStore = create<AppState>((set) => ({
     const { data } = await supabase.from('payments').update(payment).eq('id', id).select().single()
     if (data) {
       set(s => ({ payments: s.payments.map(p => p.id === id ? data : p) }))
+      
+      // 🏁 Re-evaluate loan status after edit
+      const { loans, payments } = useStore.getState()
+      const loan = loans.find(l => l.id === data.loan_id)
+      if (loan) {
+        const loanPayments = payments.filter(p => p.loan_id === loan.id)
+        const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+        const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+        const accruedInt = calcAccruedInterest(loan.loan_type, loan.principal, loan.interest_rate, loan.interest_period, loan.start_date, loan.due_date, loan.include_first_day, loanPayments)
+
+        if (paidPrincipal >= loan.principal && paidInterest >= (accruedInt - 1)) {
+          if (loan.status !== 'closed') await useStore.getState().updateLoan(loan.id, { status: 'closed' })
+        } else if (paidPrincipal < loan.principal) {
+          if (loan.status === 'closed') await useStore.getState().updateLoan(loan.id, { status: 'active' })
+        }
+      }
     }
   },
   
