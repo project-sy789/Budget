@@ -58,7 +58,27 @@ export const useStore = create<AppState>((set) => ({
       .from('loans')
       .select('*')
       .order('created_at', { ascending: false })
-    set({ loans: data || [], loading: false })
+    
+    if (data) {
+      set({ loans: data, loading: false })
+      // Proactively check for loans that should be closed but aren't
+      // This heals data that was paid before auto-close logic was added
+      const { payments } = useStore.getState()
+      if (payments.length > 0) {
+        data.forEach(async (l) => {
+          if (l.status === 'active' || l.status === 'overdue') {
+            const loanPayments = payments.filter(p => p.loan_id === l.id)
+            const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+            if (paidPrincipal >= l.principal && l.principal > 0) {
+              await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
+            }
+          }
+        })
+      }
+    } else {
+      set({ loading: false })
+    }
   },
 
   fetchPayments: async (loanId?: string) => {

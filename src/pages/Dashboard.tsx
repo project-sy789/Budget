@@ -21,8 +21,19 @@ export default function Dashboard() {
   }, [])
 
   const stats = useMemo(() => {
-    const active = loans.filter(l => l.status === 'active')
-    const overdue = active.filter(l => isOverdue(l.due_date))
+    const active = loans.filter(l => {
+      if (l.status !== 'active') return false
+      const loanPayments = payments.filter(p => p.loan_id === l.id)
+      const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      return paidPrincipal < l.principal
+    })
+    
+    const overdue = active.filter(l => {
+      const loanPayments = payments.filter(p => p.loan_id === l.id)
+      const todayStr = format(new Date(), 'yyyy-MM-dd')
+      const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
+      return isOverdue(l.due_date) && !hasPaidToday
+    })
     const totalPrincipal = active.reduce((s, l) => s + l.principal, 0)
 
     const todayInterest = active.reduce((s, l) => {
@@ -97,8 +108,20 @@ export default function Dashboard() {
   , [loans])
 
   const overdueLoans = useMemo(() =>
-    loans.filter(l => l.status === 'active' && isOverdue(l.due_date)).slice(0, 5)
-  , [loans])
+    loans.filter(l => {
+      if (l.status !== 'active' && l.status !== 'overdue') return false
+      const loanPayments = payments.filter(p => p.loan_id === l.id)
+      const paidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+      const isPrincipalPaid = paidPrincipal >= l.principal && l.principal > 0
+      if (isPrincipalPaid) return false
+
+      const todayStr = format(new Date(), 'yyyy-MM-dd')
+      const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
+      const overdueByDate = isOverdue(l.due_date)
+      
+      return (l.status === 'overdue' || overdueByDate) && !hasPaidToday
+    }).slice(0, 5)
+  , [loans, payments])
 
   return (
     <div className="fade-in">
