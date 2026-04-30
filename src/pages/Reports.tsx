@@ -353,8 +353,12 @@ export default function Reports() {
                   {loanPerformance.map(item => (
                     <tr key={item.id} className={item.status === 'closed' ? 'row-closed' : ''}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{item.borrower_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{loanTypeLabel(item.loan_type)}</div>
+                        <Link to={`/loans/${item.id}`} style={{ textDecoration: 'none' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--gold)' }}>{item.borrower_name}</div>
+                        </Link>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                          {loanTypeLabel(item.loan_type)} • เริ่ม {formatDate(item.start_date)}
+                        </div>
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{formatBaht(item.principal)}</td>
                       <td style={{ minWidth: 150 }}>
