@@ -69,6 +69,12 @@ export default function LoanDetail() {
     else if (loan.interest_period === 'yearly') dailyRate = loan.interest_rate / 100 / 365
     else dailyRate = loan.interest_rate / 100 / 30 // fallback
 
+    // For Bullet or Upfront: Accrued interest is fixed based on the contract duration
+    if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
+      const contractDays = Math.max(1, differenceInDays(parseISO(loan.due_date), parseISO(loan.start_date)) + (loan.include_first_day ? 1 : 0))
+      return loan.principal * dailyRate * contractDays
+    }
+
     let totalAccrued = 0
     const start = parseISO(loan.start_date)
 
