@@ -167,6 +167,13 @@ export const useStore = create<AppState>((set) => ({
     set(s => ({ payments: s.payments.filter(p => p.id !== id) }))
   },
   
+  updatePayment: async (id, payment) => {
+    const { data } = await supabase.from('payments').update(payment).eq('id', id).select().single()
+    if (data) {
+      set(s => ({ payments: s.payments.map(p => p.id === id ? data : p) }))
+    }
+  },
+  
   restructureLoan: async (oldId, data) => {
     const { loans, payments } = useStore.getState()
     const oldLoan = loans.find(l => l.id === oldId)

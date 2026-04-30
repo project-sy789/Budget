@@ -14,6 +14,7 @@ export default function LoanDetail() {
   const { loans, payments, fetchLoans, fetchPayments, updateLoan, deletePayment } = useStore()
   const [showPayModal, setShowPayModal] = useState(false)
   const [showRestructureModal, setShowRestructureModal] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<any>(null)
   const [isClosing, setIsClosing] = useState(false)
   const [activeTab, setActiveTab] = useState<'info' | 'payments' | 'checkin' | 'calc'>('checkin')
 
@@ -285,6 +286,14 @@ export default function LoanDetail() {
                         <td style={{ color: 'var(--text-muted)' }}>{p.receipt_no || '-'}</td>
                         <td style={{ color: 'var(--text-muted)' }}>{p.notes || '-'}</td>
                         <td>
+                          <button 
+                            onClick={() => setEditingPayment(p)} 
+                            className="btn btn-secondary btn-sm btn-icon" 
+                            title="แก้ไข"
+                            style={{ marginRight: 8 }}
+                          >
+                            ✏️
+                          </button>
                           <button onClick={() => handleDeletePayment(p.id)} className="btn btn-danger btn-sm btn-icon" title="ลบ">🗑️</button>
                         </td>
                       </tr>
@@ -317,21 +326,24 @@ export default function LoanDetail() {
         )}
       </div>
 
-      {showPayModal && loan && (
+      {(showPayModal || editingPayment) && loan && (
         <PaymentModal
           loan={loan}
           accruedInterest={outstandingInterest}
           remainingPrincipal={remaining}
           isClosing={isClosing}
+          payment={editingPayment}
           onClose={() => {
             setShowPayModal(false)
             setIsClosing(false)
+            setEditingPayment(null)
           }}
           onSaved={() => {
             setShowPayModal(false)
             setIsClosing(false)
+            setEditingPayment(null)
             fetchPayments(id)
-            fetchLoans() // Refresh to see the new status
+            fetchLoans()
           }}
         />
       )}

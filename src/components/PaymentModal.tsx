@@ -11,10 +11,11 @@ interface Props {
   onClose: () => void
   onSaved: () => void
   isClosing?: boolean
+  payment?: any
 }
 
-export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved, isClosing }: Props) {
-  const { addPayment, updateLoan } = useStore()
+export default function PaymentModal({ loan, accruedInterest, remainingPrincipal, onClose, onSaved, isClosing, payment }: Props) {
+  const { addPayment, updatePayment, updateLoan } = useStore()
   
   // Calculate interest based on the selected date
   const getAccruedAtDate = (dStr: string) => {
@@ -29,15 +30,15 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
     )
   }
 
-  const initialAccrued = getAccruedAtDate(new Date().toISOString().slice(0, 10))
-  const initialAmt = isClosing ? (remainingPrincipal + initialAccrued) : ''
+  const initialAccrued = getAccruedAtDate(payment?.payment_date || new Date().toISOString().slice(0, 10))
+  const initialAmt = payment ? payment.amount : (isClosing ? (remainingPrincipal + initialAccrued) : '')
   const [amount, setAmount] = useState(initialAmt.toString())
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [interestPaid, setInterestPaid] = useState(isClosing ? initialAccrued.toFixed(2) : '0.00')
-  const [principalPaid, setPrincipalPaid] = useState(isClosing ? remainingPrincipal.toFixed(2) : '0.00')
-  const [method, setMethod] = useState('cash')
-  const [receiptNo, setReceiptNo] = useState('')
-  const [notes, setNotes] = useState(isClosing ? 'ปิดยอดก่อนกำหนด' : '')
+  const [date, setDate] = useState(payment?.payment_date || new Date().toISOString().slice(0, 10))
+  const [interestPaid, setInterestPaid] = useState(payment ? payment.interest_paid?.toString() : (isClosing ? initialAccrued.toFixed(2) : '0.00'))
+  const [principalPaid, setPrincipalPaid] = useState(payment ? payment.principal_paid?.toString() : (isClosing ? remainingPrincipal.toFixed(2) : '0.00'))
+  const [method, setMethod] = useState(payment?.payment_method || 'cash')
+  const [receiptNo, setReceiptNo] = useState(payment?.receipt_no || '')
+  const [notes, setNotes] = useState(payment?.notes || (isClosing ? 'ปิดยอดก่อนกำหนด' : ''))
   const [saving, setSaving] = useState(false)
 
   const amt = parseFloat(amount) || 0
@@ -71,7 +72,8 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
     e.preventDefault()
     if (amt <= 0) return
     setSaving(true)
-    await addPayment({
+
+    const payload = {
       loan_id: loan.id,
       payment_date: date,
       amount: amt,
@@ -80,10 +82,15 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
       payment_method: method as any,
       receipt_no: receiptNo,
       notes,
-    })
+    }
 
-    if (isClosing) {
-      await updateLoan(loan.id, { status: 'closed' })
+    if (payment?.id) {
+      await updatePayment(payment.id, payload)
+    } else {
+      await addPayment(payload)
+      if (isClosing) {
+        await updateLoan(loan.id, { status: 'closed' })
+      }
     }
 
     setSaving(false)
@@ -94,12 +101,19 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal fade-in">
         <div className="modal-header">
-          <h3>{isClosing ? '🏁 ปิดบัญชีสินเชื่อ' : '💳 บันทึกการชำระ'} — {loan.borrower_name}</h3>
+          <h3>
+            {payment ? '✏️ แก้ไขการชำระ' : (isClosing ? '🏁 ปิดบัญชีสินเชื่อ' : '💳 บันทึกการชำระ')} 
+            — {loan.borrower_name}
+          </h3>
           <button className="btn btn-secondary btn-sm btn-icon" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {isClosing ? (
+            {payment ? (
+               <div className="alert alert-info">
+                ℹ️ <strong>โหมดแก้ไข:</strong> คุณกำลังแก้ไขรายการชำระในอดีต
+              </div>
+            ) : isClosing ? (
               <div className="alert alert-success">
                 ✨ <strong>โหมดปิดยอดก่อนกำหนด:</strong> ระบบคำนวณยอดรวมที่ต้องจ่ายทั้งหมดให้แล้ว
               </div>
@@ -146,7 +160,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
                 autoFocus
                 required
               />
-              {!isClosing && (
+              {!isClosing && !payment && (
                 <div className="form-hint" style={{ color: 'var(--success)', fontWeight: 500, marginTop: 4 }}>
                   ✨ ระบบจะนำไปหัก "ดอกเบี้ย" ให้ก่อนจนกว่าจะหมด
                 </div>
@@ -195,7 +209,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>ยกเลิก</button>
             <button id="save-payment-btn" type="submit" className="btn btn-primary" disabled={saving || !amount}>
-              {saving ? <><span className="spinner" /> กำลังบันทึก...</> : (isClosing ? '🏁 บันทึกและปิดบัญชี' : '💾 บันทึกการชำระ')}
+              {saving ? <><span className="spinner" /> กำลังบันทึก...</> : (payment ? '💾 บันทึกการแก้ไข' : (isClosing ? '🏁 บันทึกและปิดบัญชี' : '💾 บันทึกการชำระ'))}
             </button>
           </div>
         </form>
