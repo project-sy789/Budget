@@ -59,7 +59,13 @@ export default function LoanDetail() {
     }
 
     // For Daily Flat/Naive Interest (Iterate day by day to check remaining principal)
-    const dailyRate = loan.interest_rate / 100
+    let dailyRate = 0
+    if (loan.interest_period === 'daily') dailyRate = loan.interest_rate / 100
+    else if (loan.interest_period === 'weekly') dailyRate = loan.interest_rate / 100 / 7
+    else if (loan.interest_period === 'monthly') dailyRate = loan.interest_rate / 100 / 30
+    else if (loan.interest_period === 'yearly') dailyRate = loan.interest_rate / 100 / 365
+    else dailyRate = loan.interest_rate / 100 / 30 // fallback
+
     let totalAccrued = 0
     const start = parseISO(loan.start_date)
 
