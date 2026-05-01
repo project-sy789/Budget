@@ -63,7 +63,7 @@ export default function AddLoan() {
   const [form, setForm] = useState<FormData>(defaultForm)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [interestMode, setInterestMode] = useState<'percent' | 'amount' | 'total'>('percent')
+  const [interestMode, setInterestMode] = useState<'percent' | 'amount'>('percent')
   const [interestAmount, setInterestAmount] = useState('')
   const [totalRepay, setTotalRepay] = useState('')
   const [dueMode, setDueMode] = useState<'date' | 'days'>('date')
@@ -219,10 +219,6 @@ export default function AddLoan() {
     }
   }
 
-  const handleTotalRepayChange = (val: string) => {
-    setTotalRepay(val)
-    syncFromTotal(form)
-  }
 
   const handleDueDaysChange = (val: string) => {
     setDueDays(val)
@@ -243,19 +239,13 @@ export default function AddLoan() {
     }
   }
 
-  const setInterestModeWrapper = (mode: 'percent' | 'amount' | 'total') => {
+  const setInterestModeWrapper = (mode: 'percent' | 'amount') => {
     setInterestMode(mode)
     const p = parseFloat(form.principal) || 0
     const r = parseFloat(form.interest_rate) || 0
     
     if (mode === 'amount') {
       setInterestAmount(((r / 100) * p).toFixed(2))
-    } else if (mode === 'total') {
-      if (preview?.summary) {
-        // Try to get totalRepay from current preview
-        const totalObj = preview.summary.find((s: any) => s.isTotal)
-        if (totalObj) setTotalRepay(totalObj.value.replace(/[^0-9.]/g, ''))
-      }
     }
   }
 
@@ -277,6 +267,8 @@ export default function AddLoan() {
     const periodLabel = PERIODS.find(px => px.value === period)?.label.replace('% ต่อ', '') || 'วัน'
     const rateFormatted = `${parseFloat(form.interest_rate).toFixed(2)}%`
 
+    let result: any = null
+
     switch (form.loan_type) {
       case 'daily':
       case 'yearly': {
@@ -287,7 +279,7 @@ export default function AddLoan() {
         const actualTotalRepay = displayInstallment * daysToDate
         const actualTotalInterest = actualTotalRepay - p
 
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ย (${periodLabel})`, value: rateFormatted },
           { label: `ยอดส่งต่อ${periodLabel}`, value: formatBaht(displayInstallment), isHighlight: true },
@@ -295,31 +287,34 @@ export default function AddLoan() {
           { label: `ดอกเบี้ยรวมทั้งหมด`, value: formatBaht(actualTotalInterest) },
           { label: 'ยอดรวมที่ต้องได้รับ', value: formatBaht(actualTotalRepay), isTotal: true },
         ], rows: null }
+        break
       }
       case 'upfront': {
         const res = calcUpfront(p, r, period, daysToDate)
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `ดอกเบี้ยหักล่วงหน้า`, value: formatBaht(res.upfrontInterest) },
           { label: 'ผู้กู้รับเงินจริง', value: formatBaht(res.received), isHighlight: true },
           { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
           { label: 'ยอดที่ต้องคืน (ต้น)', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
+        break
       }
       case 'bullet': {
         const res = calcBullet(p, r, period, daysToDate)
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `ดอกเบี้ยต่อ${periodLabel}`, value: formatBaht(p * (r/100)) },
           { label: `ระยะเวลากู้`, value: `${daysToDate} วัน` },
           { label: `ดอกเบี้ยรวม (จ่ายตอนจบ)`, value: formatBaht(res.totalInterest) },
           { label: 'ยอดจ่ายรวมตอนครบกำหนด', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
+        break
       }
       case 'weekly': {
         const rows = calcWeeklyInstallment(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ยต่อสัปดาห์`, value: rateFormatted },
           { label: 'ยอดผ่อนต่องวด', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
@@ -327,11 +322,12 @@ export default function AddLoan() {
           { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
           { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
+        break
       }
       case 'monthly': {
         const rows = calcMonthlyInstallment(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ยต่อเดือน`, value: rateFormatted },
           { label: 'ยอดผ่อนต่องวด', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
@@ -339,11 +335,12 @@ export default function AddLoan() {
           { label: 'ดอกเบี้ยรวม', value: formatBaht(total - p) },
           { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
+        break
       }
       case 'reducing': {
         const rows = calcReducing(p, r, period, inst, start)
         const total = rows.reduce((s, r) => s + r.payment, 0)
-        return { summary: [
+        result = { summary: [
           { label: 'เงินต้น', value: formatBaht(p) },
           { label: `อัตราดอกเบี้ยต่อปี`, value: rateFormatted },
           { label: 'ยอดผ่อนงวดแรก (ประมาณ)', value: formatBaht(rows[0]?.payment || 0), isHighlight: true },
@@ -351,10 +348,27 @@ export default function AddLoan() {
           { label: 'ดอกเบี้ยรวมโดยประมาณ', value: formatBaht(total - p) },
           { label: 'ยอดรวมทั้งหมดที่ต้องได้รับ', value: formatBaht(total), isTotal: true },
         ], rows }
+        break
       }
-      default: return null
+      default: break
     }
-  }, [form.loan_type, form.principal, form.interest_rate, form.interest_period, form.start_date, form.due_date, form.installments, form.include_first_day, form.installment_amount])
+
+    // 🎯 Override with total_target if specified
+    const target = parseFloat(form.total_target)
+    if (result && target > 0) {
+      result.summary = result.summary.map(item => {
+        if (item.isTotal) {
+          return { ...item, value: formatBaht(target) }
+        }
+        if (item.label.includes('ดอกเบี้ยรวม')) {
+          return { ...item, value: formatBaht(target - p) }
+        }
+        return item
+      })
+    }
+
+    return result
+  }, [form.loan_type, form.principal, form.interest_rate, form.interest_period, form.start_date, form.due_date, form.installments, form.include_first_day, form.installment_amount, form.total_target])
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -573,26 +587,20 @@ export default function AddLoan() {
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <label className="form-label" style={{ marginBottom: 0 }}>อัตราดอกเบี้ย <span className="required">*</span></label>
-                    <div className="segmented-control" style={{ width: 160 }}>
+                    <div className="segmented-control" style={{ width: 120 }}>
                       <button type="button" className={`segment-btn ${interestMode === 'percent' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('percent')}>%</button>
                       <button type="button" className={`segment-btn ${interestMode === 'amount' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('amount')}>บาท</button>
-                      <button type="button" className={`segment-btn ${interestMode === 'total' ? 'active' : ''}`} onClick={() => setInterestModeWrapper('total')}>รวม</button>
                     </div>
                   </div>
                   <div style={{ position: 'relative' }}>
                     {interestMode === 'percent' ? (
                       <>
-                        <input id="rate-input" className="form-input" step="0.01" placeholder="1" type="number" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} style={{ paddingRight: 36 }} />
+                        <input id="rate-input" className="form-input" step="0.000001" placeholder="1" type="number" value={form.interest_rate} onChange={e => set('interest_rate', e.target.value)} style={{ paddingRight: 36 }} />
                         <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>%</span>
-                      </>
-                    ) : interestMode === 'amount' ? (
-                      <>
-                        <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
-                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
                       </>
                     ) : (
                       <>
-                        <input id="total-repay-input" className="form-input" type="number" step="0.01" value={totalRepay} onChange={e => handleTotalRepayChange(e.target.value)} placeholder="12000" style={{ paddingRight: 36 }} />
+                        <input id="rate-amt-input" className="form-input" type="number" step="0.01" value={interestAmount} onChange={e => handleInterestAmountChange(e.target.value)} placeholder="500" style={{ paddingRight: 36 }} />
                         <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>฿</span>
                       </>
                     )}
