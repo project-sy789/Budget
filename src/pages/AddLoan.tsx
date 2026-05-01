@@ -213,6 +213,32 @@ export default function AddLoan() {
     }
   }
 
+  const syncFromTotal = (targetVal: string) => {
+    const p = parseFloat(form.principal) || 0
+    const tr = parseFloat(targetVal) || 0
+    const start = form.start_date
+    const end = form.due_date
+    const type = form.loan_type
+    const period = form.interest_period as any
+
+    if (!p || !tr || !start || !end || tr <= p) return
+
+    const diffDays = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000)
+    const days = form.include_first_day ? diffDays + 1 : diffDays
+    
+    if (type === 'bullet' || type === 'upfront' || type === 'daily' || type === 'yearly') {
+      const totalInterest = tr - p
+      const dailyInt = totalInterest / days
+      const rate = (dailyInt / p) * 100
+      
+      let finalRate = rate
+      if (period === 'weekly') finalRate = rate * 7
+      if (period === 'monthly') finalRate = rate * 30
+      if (period === 'yearly') finalRate = rate * 365
+
+      set('interest_rate', finalRate.toFixed(6))
+    }
+  }
 
   const handleDueDaysChange = (val: string) => {
     setDueDays(val)
@@ -622,7 +648,10 @@ export default function AddLoan() {
                         type="number" 
                         placeholder="เช่น 20000" 
                         value={form.total_target} 
-                        onChange={e => set('total_target', e.target.value)}
+                        onChange={e => {
+                          set('total_target', e.target.value)
+                          syncFromTotal(e.target.value)
+                        }}
                         style={{ border: '1px solid var(--gold)', background: 'var(--gold-glow)' }}
                       />
                       <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: '0.9rem' }}>฿</span>
