@@ -203,7 +203,7 @@ export default function AddLoan() {
         ratePerPeriod = (dailyAmt / p) * 100
       }
 
-      setForm(f => ({ ...f, interest_rate: ratePerPeriod.toFixed(4) }))
+      setForm(f => ({ ...f, interest_rate: ratePerPeriod.toFixed(6) }))
     }
   }
 
@@ -212,7 +212,7 @@ export default function AddLoan() {
     const amt = parseFloat(val) || 0
     const p = parseFloat(form.principal) || 0
     if (p > 0) {
-      set('interest_rate', ((amt / p) * 100).toFixed(4))
+      set('interest_rate', ((amt / p) * 100).toFixed(6))
     }
   }
 
