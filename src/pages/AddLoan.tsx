@@ -135,17 +135,11 @@ export default function AddLoan() {
         }
       }
 
-      // Sync interest if mode is total and principal/dates/installments change
-      if (interestMode === 'total' && (key === 'principal' || key === 'due_date' || key === 'start_date' || key === 'installments')) {
-        setTimeout(() => syncFromTotal(newForm), 0)
-      }
 
       // Re-calculate if interest_period changes while in Amount or Total mode
       if (key === 'interest_period' && typeof val === 'string') {
         if (interestMode === 'amount') {
           setTimeout(() => handleInterestAmountChange(interestAmount), 0)
-        } else if (interestMode === 'total') {
-          setTimeout(() => syncFromTotal(newForm), 0)
         }
       }
 
