@@ -350,7 +350,7 @@ export default function AddLoan() {
     // 🎯 Override with total_target if specified
     const target = parseFloat(form.total_target)
     if (result && target > 0) {
-      result.summary = result.summary.map(item => {
+      result.summary = result.summary.map((item: any) => {
         if (item.isTotal) {
           return { ...item, value: formatBaht(target) }
         }
