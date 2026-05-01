@@ -134,7 +134,8 @@ export default function DailyCheckin({ loan, payments }: Props) {
   const generateReportText = () => {
     const startMonthName = format(startDate, 'MMMM', { locale: th })
     
-    let text = `🌳ต้น ${loan.principal.toLocaleString()}🌳\n${format(startDate, 'd')} ${startMonthName} พ.ศ. ${startDate.getFullYear() + 543}\n\n`
+    // 🌳 ใช้ชื่อลูกหนี้เป็นหัวข้อ (เพื่อให้ตรงกับชื่อสัญญาที่พี่ตั้งไว้ เช่น ต้น 20000)
+    let text = `🌳${loan.borrower_name}🌳\n${format(startDate, 'd')} ${startMonthName} พ.ศ. ${startDate.getFullYear() + 543}\n\n`
     if (defaultDailyAmt > 0) {
       text += `  🌼${defaultDailyAmt.toLocaleString()}/วัน🌼\n`
     }
