@@ -173,37 +173,6 @@ export default function AddLoan() {
     }
   }
 
-  const syncFromTotal = (currentForm: FormData) => {
-    const total = parseFloat(totalRepay) || 0
-    const p = parseFloat(currentForm.principal) || 0
-    const inst = parseInt(currentForm.installments) || 1
-    
-    if (p > 0 && total > p) {
-      const totalInterest = total - p
-      let ratePerPeriod = 0
-
-      // If it's installment-based, calculate rate per installment
-      if (['weekly', 'monthly', 'reducing'].includes(currentForm.loan_type)) {
-        const interestPerInst = totalInterest / inst
-        ratePerPeriod = (interestPerInst / p) * 100
-      } else if (currentForm.start_date && currentForm.due_date) {
-        const start = new Date(currentForm.start_date)
-        const end = new Date(currentForm.due_date)
-        const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000))
-        
-        let dailyAmt = 0
-        if (currentForm.interest_period === 'daily') dailyAmt = totalInterest / diffDays
-        else if (currentForm.interest_period === 'weekly') dailyAmt = totalInterest / (diffDays / 7)
-        else if (currentForm.interest_period === 'monthly') dailyAmt = totalInterest / (diffDays / 30)
-        else dailyAmt = totalInterest / (diffDays / 365)
-        
-        ratePerPeriod = (dailyAmt / p) * 100
-      }
-
-      setForm(f => ({ ...f, interest_rate: ratePerPeriod.toFixed(6) }))
-    }
-  }
-
   const handleInterestAmountChange = (val: string) => {
     setInterestAmount(val)
     const amt = parseFloat(val) || 0

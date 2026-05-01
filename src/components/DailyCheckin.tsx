@@ -149,15 +149,8 @@ export default function DailyCheckin({ loan, payments }: Props) {
       }
     })
     
-    let totalToRepay = loan.principal
-    if (loan.total_target && loan.total_target > 0) {
-      // 🎯 Priority 1: Use the manually locked total (Fixed Deal)
-      totalToRepay = loan.total_target
-    } else if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
-      // Priority 2: Calculated from percentage
-      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
-      totalToRepay = loan.principal + (dailyInfo.dailyInterest * contractDays)
-    }
+    // 💰 For LINE Report: Always show only the Principal as the 'Total' (to avoid shocking the customer)
+    const totalToRepay = loan.principal
 
     text += `\nรวมยอด ${totalToRepay.toLocaleString()} 💸\n\n`
     text += `🕑ส่งยอด 20.30 น.`
