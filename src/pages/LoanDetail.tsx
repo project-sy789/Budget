@@ -324,6 +324,51 @@ export default function LoanDetail() {
             ))}
           </div>
         )}
+
+        {/* 📚 Loan History Linkage */}
+        {(() => {
+          const history = loans
+            .filter(l => l.borrower_name === loan.borrower_name && l.id !== loan.id)
+            .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())
+
+          if (history.length === 0) return null
+
+          return (
+            <div className="card fade-in" style={{ marginTop: 24, background: 'var(--bg-secondary)', border: '1px dashed var(--border)' }}>
+              <div className="section-title" style={{ fontSize: '0.9rem', opacity: 0.8 }}>📚 ประวัติสัญญาทั้งหมดของคุณ {loan.borrower_name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {history.map(h => (
+                  <div 
+                    key={h.id} 
+                    onClick={() => {
+                      navigate(`/loans/${h.id}`)
+                      window.scrollTo(0, 0)
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '10px 14px',
+                      background: 'var(--bg-primary)',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      border: '1px solid var(--border)',
+                      fontSize: '0.85rem'
+                    }}
+                    className="hover-scale"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className={`badge ${statusBadgeClass(h.status)}`} style={{ fontSize: '0.7rem', padding: '2px 6px' }}>{statusLabel(h.status)}</span>
+                      <strong>{formatBaht(h.principal)}</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>เริ่ม {formatDate(h.start_date)}</span>
+                    </div>
+                    <span style={{ color: 'var(--gold)' }}>ดูรายละเอียด →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {(showPayModal || editingPayment) && loan && (

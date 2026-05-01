@@ -79,13 +79,8 @@ export const useStore = create<AppState>((set) => ({
               await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
             }
-          } else if (l.status === 'closed') {
-            // Re-open ONLY if principal is missing. 
-            if (paidPrincipal < l.principal && l.principal > 0) {
-              await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
-              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
-            }
           }
+          // Note: We removed the 'Auto-reopen' logic to respect manual closures and discounts.
         })
       }
     } else {
