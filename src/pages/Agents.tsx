@@ -39,7 +39,11 @@ export default function Agents() {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
 
     agentLoans.forEach(loan => {
-      const dailyAmt = loan.installment_amount || 0
+      let dailyAmt = loan.installment_amount || 0
+      if (dailyAmt <= 0) {
+        const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+        dailyAmt = info.dailyInterest
+      }
       totalExpected += dailyAmt
 
       const todayPayment = payments.find(p => p.loan_id === loan.id && p.payment_date === todayStr)
