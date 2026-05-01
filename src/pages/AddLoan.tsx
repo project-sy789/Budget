@@ -43,6 +43,7 @@ interface FormData {
   notes: string
   agent_name: string
   include_first_day: boolean
+  total_target: string
 }
 
 const defaultForm: FormData = {
@@ -51,7 +52,8 @@ const defaultForm: FormData = {
   start_date: new Date().toISOString().slice(0, 10), due_date: '',
   installments: '', installment_amount: '', collateral: '', guarantor_name: '', notes: '',
   agent_name: '',
-  include_first_day: true
+  include_first_day: true,
+  total_target: ''
 }
 
 export default function AddLoan() {
@@ -102,7 +104,8 @@ export default function AddLoan() {
           guarantor_name: loan.guarantor_name || '',
           notes: loan.notes || '',
           agent_name: loan.agent_name || '',
-          include_first_day: loan.include_first_day
+          include_first_day: loan.include_first_day,
+          total_target: loan.total_target?.toString() || ''
         })
       }
     }
@@ -397,6 +400,7 @@ export default function AddLoan() {
       guarantor_name: form.guarantor_name,
       agent_name: trimmedAgent,
       notes: form.notes,
+      total_target: form.total_target ? parseFloat(form.total_target) : null,
     }
 
     if (isEdit && id) {
@@ -611,6 +615,26 @@ export default function AddLoan() {
                       ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
                     </div>
                   )}
+
+                  <div className="divider" style={{ margin: '20px 0' }} />
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: 'var(--gold)', fontWeight: 700 }}>🎯 ยอดจบที่ต้องการ (ล็อกยอดถ้วน)</label>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        className="form-input" 
+                        type="number" 
+                        placeholder="เช่น 20000" 
+                        value={form.total_target} 
+                        onChange={e => set('total_target', e.target.value)}
+                        style={{ border: '1px solid var(--gold)', background: 'var(--gold-glow)' }}
+                      />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: '0.9rem' }}>฿</span>
+                    </div>
+                    <p className="form-hint" style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
+                      * หากระบุยอดนี้ ระบบจะใช้เลขนี้เป็น <strong>"ยอดรวม"</strong> ในรายงาน LINE ทันที โดยไม่สนเศษทศนิยมจากการคำนวณครับ
+                    </p>
+                  </div>
                 </div>
 
                 {/* Dates Section */}

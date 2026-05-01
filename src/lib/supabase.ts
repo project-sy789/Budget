@@ -37,6 +37,7 @@ export interface Loan {
   status: 'active' | 'closed' | 'overdue' | 'restructured'
   agent_name: string
   notes: string
+  total_target: number | null
   created_at: string
 }
 
