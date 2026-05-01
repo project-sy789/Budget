@@ -597,7 +597,7 @@ export default function AddLoan() {
                       </>
                     )}
                   </div>
-                  <div className="form-group" style={{ marginTop: 12 }}>
+                  <div className="form-group" style={{ marginTop: 8 }}>
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>ระยะเวลาดอกเบี้ย</label>
                     <select 
                       className="form-select" 
@@ -610,16 +610,10 @@ export default function AddLoan() {
                     </select>
                   </div>
 
-                  {interestMode !== 'percent' && (
-                    <div className="form-hint-pill" style={{ marginTop: 8 }}>
-                      ≈ {parseFloat(form.interest_rate) ? parseFloat(form.interest_rate).toFixed(2) : '0.00'}% {PERIODS.find(px => px.value === form.interest_period)?.label || 'ต่อรอบ'}
-                    </div>
-                  )}
+                  <div className="divider" style={{ margin: '12px 0' }} />
 
-                  <div className="divider" style={{ margin: '20px 0' }} />
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--gold)', fontWeight: 700 }}>🎯 ยอดจบที่ต้องการ (ล็อกยอดถ้วน)</label>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>🎯 ยอดจบที่ต้องการ (ล็อกยอดถ้วน)</label>
                     <div style={{ position: 'relative' }}>
                       <input 
                         className="form-input" 
@@ -631,8 +625,8 @@ export default function AddLoan() {
                       />
                       <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: '0.9rem' }}>฿</span>
                     </div>
-                    <p className="form-hint" style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
-                      * หากระบุยอดนี้ ระบบจะใช้เลขนี้เป็น <strong>"ยอดรวม"</strong> ในรายงาน LINE ทันที โดยไม่สนเศษทศนิยมจากการคำนวณครับ
+                    <p className="form-hint" style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: '0.75rem' }}>
+                      * ใช้เป็น <strong>"ยอดรวม"</strong> ในรายงาน LINE ทันที
                     </p>
                   </div>
                 </div>
