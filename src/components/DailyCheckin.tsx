@@ -89,7 +89,11 @@ export default function DailyCheckin({ loan, payments }: Props) {
     let totalOwedInterest = 0
     if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
       const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
-      totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * contractDays
+      if (loan.total_target && loan.total_target > loan.principal) {
+        totalOwedInterest = loan.total_target - loan.principal
+      } else {
+        totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * contractDays
+      }
     } else {
       const daysElapsed = Math.max(0, differenceInDays(new Date(), startDate))
       totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * daysElapsed
@@ -162,6 +166,81 @@ export default function DailyCheckin({ loan, payments }: Props) {
     navigator.clipboard.writeText(generateReportText())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // 🎯 Render completely different view for Bullet / Upfront (Single Payment) Loans
+  if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
+    const endMonthName = format(dueDate, 'MMMM', { locale: th })
+    const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
+    const target = (loan.total_target && loan.total_target > 0) 
+        ? loan.total_target 
+        : loan.principal + (dailyInfo.dailyInterest * contractDays)
+
+    const generateBulletReportText = () => {
+      const startMonthName = format(startDate, 'MMMM', { locale: th })
+      let text = `🌳${loan.borrower_name}🌳\n`
+      text += `📅 วันกู้: ${format(startDate, 'd')} ${startMonthName} ${startDate.getFullYear() + 543}\n`
+      text += `🎯 วันคืน: ${format(dueDate, 'd')} ${endMonthName} ${dueDate.getFullYear() + 543}\n\n`
+      text += `ยอดกู้ ${loan.principal.toLocaleString()}\n`
+      text += `รวมส่งคืน ${target.toLocaleString()} 💸\n\n`
+      text += `*(จ่ายก้อนเดียวเมื่อครบกำหนด)*\n`
+      return text
+    }
+
+    return (
+      <div className="fade-in">
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>📅 ข้อมูลส่งยอด (LINE Report)</div>
+            <button onClick={() => {
+              navigator.clipboard.writeText(generateBulletReportText())
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }} className="btn btn-primary btn-sm">
+              {copied ? '✅ คัดลอกแล้ว' : '📋 คัดลอกข้อความ'}
+            </button>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '1.1rem', color: 'var(--gold)', marginBottom: 8, fontWeight: 700 }}>
+              สินเชื่อนี้เป็นการจ่ายก้อนเดียวเมื่อครบกำหนด
+            </div>
+            <div style={{ color: 'var(--text-secondary)' }}>
+              ยอดส่งคืนรวม: <strong style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>{formatBaht(target)}</strong>
+            </div>
+            {payments.length === 0 ? (
+              <button 
+                className="btn btn-success" 
+                style={{ marginTop: 20, padding: '10px 24px' }}
+                onClick={() => handleQuickPay(format(dueDate, 'yyyy-MM-dd'), false)}
+                disabled={!!savingDate}
+              >
+                {savingDate ? 'กำลังบันทึก...' : `✅ บันทึกรับเงิน ${formatBaht(target)}`}
+              </button>
+            ) : (
+              <div style={{ marginTop: 20, color: 'var(--success)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                ✅ รับชำระเรียบร้อยแล้ว
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="section-title">📝 ตัวอย่างข้อความที่จะส่ง</div>
+          <pre style={{ 
+            background: 'var(--bg-secondary)', 
+            padding: 16, 
+            borderRadius: 8,
+            fontSize: '0.9rem',
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'inherit',
+            border: '1px solid var(--border)'
+          }}>
+            {generateBulletReportText()}
+          </pre>
+        </div>
+      </div>
+    )
   }
 
   return (

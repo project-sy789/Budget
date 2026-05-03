@@ -18,20 +18,30 @@ export default function Reports() {
 
   // Daily report for selected month
   const dailyData = useMemo(() => {
-    const [y, m] = selectedMonth.split('-').map(Number)
-    const start = startOfMonth(new Date(y, m - 1))
-    const end = endOfMonth(new Date(y, m - 1))
-    const days = eachDayOfInterval({ start, end })
-    return days.map(d => {
-      const key = format(d, 'yyyy-MM-dd')
-      const dayPayments = payments.filter(p => p.payment_date === key)
-      return {
-        label: format(d, 'd'),
-        interest: dayPayments.reduce((s, p) => s + (p.interest_paid || 0), 0),
-        principal: dayPayments.reduce((s, p) => s + (p.principal_paid || 0), 0),
-        count: dayPayments.length,
-      }
-    })
+    const parts = selectedMonth.split('-')
+    if (parts.length !== 2) return []
+    const y = parseInt(parts[0])
+    const m = parseInt(parts[1])
+    if (isNaN(y) || isNaN(m)) return []
+
+    try {
+      const start = startOfMonth(new Date(y, m - 1))
+      const end = endOfMonth(new Date(y, m - 1))
+      const days = eachDayOfInterval({ start, end })
+      return days.map(d => {
+        const key = format(d, 'yyyy-MM-dd')
+        const dayPayments = payments.filter(p => p.payment_date === key)
+        return {
+          label: format(d, 'd'),
+          interest: dayPayments.reduce((s, p) => s + (p.interest_paid || 0), 0),
+          principal: dayPayments.reduce((s, p) => s + (p.principal_paid || 0), 0),
+          count: dayPayments.length,
+        }
+      })
+    } catch (err) {
+      console.error('Invalid date interval:', err)
+      return []
+    }
   }, [payments, selectedMonth])
 
   // Monthly report (last 12 months)
@@ -66,6 +76,9 @@ export default function Reports() {
 
   // Month summary totals
   const monthTotals = useMemo(() => {
+    if (!selectedMonth || selectedMonth.split('-').length !== 2) {
+      return { interest: 0, principal: 0, total: 0, count: 0 }
+    }
     const mp = payments.filter(p => p.payment_date?.startsWith(selectedMonth))
     return {
       interest: mp.reduce((s, p) => s + (p.interest_paid || 0), 0),
