@@ -39,12 +39,32 @@ export default function Agents() {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
 
     agentLoans.forEach(loan => {
-      let dailyAmt = loan.installment_amount || 0
-      if (dailyAmt <= 0) {
-        const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
-        dailyAmt = info.dailyInterest
+      const isBullet = loan.loan_type === 'bullet' || loan.loan_type === 'upfront'
+      let expectedAmt = 0
+
+      if (isBullet) {
+        if (todayStr >= loan.due_date) {
+          const contractDays = Math.max(1, differenceInDays(parseISO(loan.due_date), parseISO(loan.start_date)) + (loan.include_first_day ? 1 : 0))
+          const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+          expectedAmt = (loan.total_target && loan.total_target > 0) 
+            ? loan.total_target 
+            : loan.principal + (info.dailyInterest * contractDays)
+          
+          const priorPayments = payments.filter(p => p.loan_id === loan.id && p.payment_date < todayStr)
+          const priorTotal = priorPayments.reduce((s, p) => s + p.amount, 0)
+          expectedAmt = Math.max(0, expectedAmt - priorTotal)
+        }
+      } else {
+        expectedAmt = loan.installment_amount || 0
+        if (expectedAmt <= 0) {
+          const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+          expectedAmt = info.dailyInterest
+        }
       }
-      totalExpected += dailyAmt
+
+      if (expectedAmt > 0) {
+        totalExpected += expectedAmt
+      }
 
       const todayPayment = payments.find(p => p.loan_id === loan.id && p.payment_date === todayStr)
       if (todayPayment) {
@@ -56,13 +76,27 @@ export default function Agents() {
   }, [agentLoans, payments])
 
   const handleQuickPay = async (loan: any) => {
-    let dailyAmt = loan.installment_amount || 0
-    if (dailyAmt <= 0) {
+    let amountToPay = 0
+    const isBullet = loan.loan_type === 'bullet' || loan.loan_type === 'upfront'
+
+    if (isBullet) {
+      const contractDays = Math.max(1, differenceInDays(parseISO(loan.due_date), parseISO(loan.start_date)) + (loan.include_first_day ? 1 : 0))
       const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
-      dailyAmt = info.dailyInterest
+      const target = (loan.total_target && loan.total_target > 0) 
+        ? loan.total_target 
+        : loan.principal + (info.dailyInterest * contractDays)
+      
+      const priorTotal = payments.filter(p => p.loan_id === loan.id).reduce((s, p) => s + p.amount, 0)
+      amountToPay = Math.max(0, target - priorTotal)
+    } else {
+      amountToPay = loan.installment_amount || 0
+      if (amountToPay <= 0) {
+        const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+        amountToPay = info.dailyInterest
+      }
     }
 
-    if (dailyAmt <= 0) return
+    if (amountToPay <= 0) return
 
     setChecking(loan.id)
     
@@ -88,17 +122,17 @@ export default function Agents() {
     let interestPaid = 0
 
     if (outstandingInterest > 0) {
-      interestPaid = Math.min(dailyAmt, outstandingInterest)
-      principalPaid = Math.max(0, dailyAmt - interestPaid)
+      interestPaid = Math.min(amountToPay, outstandingInterest)
+      principalPaid = Math.max(0, amountToPay - interestPaid)
     } else {
       interestPaid = 0
-      principalPaid = dailyAmt
+      principalPaid = amountToPay
     }
 
     await addPayment({
       loan_id: loan.id,
       payment_date: format(new Date(), 'yyyy-MM-dd'),
-      amount: dailyAmt,
+      amount: amountToPay,
       interest_paid: Number(interestPaid.toFixed(2)),
       principal_paid: Number(principalPaid.toFixed(2)),
       payment_method: 'transfer',
@@ -120,7 +154,7 @@ export default function Agents() {
     agentLoans.forEach((loan, idx) => {
       const todayStrYmd = format(new Date(), 'yyyy-MM-dd')
       const hasPaid = payments.some(p => p.loan_id === loan.id && p.payment_date === todayStrYmd)
-      const dailyAmt = loan.installment_amount || 0
+      const isBullet = loan.loan_type === 'bullet' || loan.loan_type === 'upfront'
       
       const loanDate = new Date(loan.start_date)
       const dateStr = format(loanDate, 'd MMMM', { locale: th })
@@ -129,7 +163,16 @@ export default function Agents() {
       text += `${idx + 1}. ${loan.borrower_name}\n`
       text += `🌳ต้น ${loan.principal.toLocaleString()}🌳  ${dateStr}\n`
       text += `                            พ.ศ. ${yearThStr}\n\n`
-      text += `  🌼${dailyAmt.toLocaleString()}/วัน🌼 ${hasPaid ? '✅' : '📍'}\n`
+      if (isBullet) {
+        text += `  🌼ก้อนเดียว🌼 ${hasPaid ? '✅' : '📍'}\n`
+      } else {
+        let dailyAmt = loan.installment_amount || 0
+        if (dailyAmt <= 0) {
+          const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
+          dailyAmt = info.dailyInterest
+        }
+        text += `  🌼${dailyAmt.toLocaleString()}/วัน🌼 ${hasPaid ? '✅' : '📍'}\n`
+      }
       text += `.........................................\n\n`
     })
 
