@@ -264,6 +264,7 @@ export default function Agents() {
                           <td>{formatBaht(loan.principal)}</td>
                           <td className="td-gold">
                             {(() => {
+                              if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') return <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>ก้อนเดียว</span>
                               if (loan.installment_amount && loan.installment_amount > 0) return formatBaht(loan.installment_amount)
                               const info = calcDailyFlat(loan.principal, loan.interest_rate, loan.interest_period, 1)
                               return formatBaht(info.dailyInterest)

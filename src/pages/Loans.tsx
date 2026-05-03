@@ -161,6 +161,7 @@ export default function Loans() {
                       <td className="td-amount td-gold">{formatBaht(loan.principal)}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>
                         {(() => {
+                          if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') return <span style={{ fontSize: '0.85rem' }}>ก้อนเดียว</span>
                           let daily = loan.interest_rate
                           if (loan.interest_period === 'weekly') daily = loan.interest_rate / 7
                           if (loan.interest_period === 'monthly') daily = loan.interest_rate / 30
