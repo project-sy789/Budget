@@ -137,10 +137,13 @@ export default function DailyCheckin({ loan, payments }: Props) {
 
   const generateReportText = () => {
     const startMonthName = format(startDate, 'MMMM', { locale: th })
+    const isBullet = loan.loan_type === 'bullet' || loan.loan_type === 'upfront'
     
     // 🌳 ใช้ชื่อลูกหนี้เป็นหัวข้อ (เพื่อให้ตรงกับชื่อสัญญาที่พี่ตั้งไว้ เช่น ต้น 20000)
     let text = `🌳${loan.borrower_name}🌳\n${format(startDate, 'd')} ${startMonthName} พ.ศ. ${startDate.getFullYear() + 543}\n\n`
-    if (defaultDailyAmt > 0) {
+    if (isBullet) {
+      text += `  🌼-/วัน🌼\n`
+    } else if (defaultDailyAmt > 0) {
       text += `  🌼${defaultDailyAmt.toLocaleString()}/วัน🌼\n`
     }
     text += `.........................................\n`
@@ -153,8 +156,13 @@ export default function DailyCheckin({ loan, payments }: Props) {
       }
     })
     
-    // 💰 For LINE Report: Always show only the Principal as the 'Total' (to avoid shocking the customer)
-    const totalToRepay = loan.principal
+    let totalToRepay = loan.principal
+    if (isBullet) {
+      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
+      totalToRepay = (loan.total_target && loan.total_target > 0) 
+        ? loan.total_target 
+        : loan.principal + (dailyInfo.dailyInterest * contractDays)
+    }
 
     text += `\nรวมยอด ${totalToRepay.toLocaleString()} 💸\n\n`
     text += `🕑ส่งยอด 20.30 น.`
@@ -166,81 +174,6 @@ export default function DailyCheckin({ loan, payments }: Props) {
     navigator.clipboard.writeText(generateReportText())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  // 🎯 Render completely different view for Bullet / Upfront (Single Payment) Loans
-  if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
-    const endMonthName = format(dueDate, 'MMMM', { locale: th })
-    const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
-    const target = (loan.total_target && loan.total_target > 0) 
-        ? loan.total_target 
-        : loan.principal + (dailyInfo.dailyInterest * contractDays)
-
-    const generateBulletReportText = () => {
-      const startMonthName = format(startDate, 'MMMM', { locale: th })
-      let text = `🌳${loan.borrower_name}🌳\n`
-      text += `📅 วันกู้: ${format(startDate, 'd')} ${startMonthName} ${startDate.getFullYear() + 543}\n`
-      text += `🎯 วันคืน: ${format(dueDate, 'd')} ${endMonthName} ${dueDate.getFullYear() + 543}\n\n`
-      text += `ยอดกู้ ${loan.principal.toLocaleString()}\n`
-      text += `รวมส่งคืน ${target.toLocaleString()} 💸\n\n`
-      text += `*(จ่ายก้อนเดียวเมื่อครบกำหนด)*\n`
-      return text
-    }
-
-    return (
-      <div className="fade-in">
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>📅 ข้อมูลส่งยอด (LINE Report)</div>
-            <button onClick={() => {
-              navigator.clipboard.writeText(generateBulletReportText())
-              setCopied(true)
-              setTimeout(() => setCopied(false), 2000)
-            }} className="btn btn-primary btn-sm">
-              {copied ? '✅ คัดลอกแล้ว' : '📋 คัดลอกข้อความ'}
-            </button>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '1.1rem', color: 'var(--gold)', marginBottom: 8, fontWeight: 700 }}>
-              สินเชื่อนี้เป็นการจ่ายก้อนเดียวเมื่อครบกำหนด
-            </div>
-            <div style={{ color: 'var(--text-secondary)' }}>
-              ยอดส่งคืนรวม: <strong style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>{formatBaht(target)}</strong>
-            </div>
-            {payments.length === 0 ? (
-              <button 
-                className="btn btn-success" 
-                style={{ marginTop: 20, padding: '10px 24px' }}
-                onClick={() => handleQuickPay(format(dueDate, 'yyyy-MM-dd'), false)}
-                disabled={!!savingDate}
-              >
-                {savingDate ? 'กำลังบันทึก...' : `✅ บันทึกรับเงิน ${formatBaht(target)}`}
-              </button>
-            ) : (
-              <div style={{ marginTop: 20, color: 'var(--success)', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                ✅ รับชำระเรียบร้อยแล้ว
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="section-title">📝 ตัวอย่างข้อความที่จะส่ง</div>
-          <pre style={{ 
-            background: 'var(--bg-secondary)', 
-            padding: 16, 
-            borderRadius: 8,
-            fontSize: '0.9rem',
-            whiteSpace: 'pre-wrap',
-            fontFamily: 'inherit',
-            border: '1px solid var(--border)'
-          }}>
-            {generateBulletReportText()}
-          </pre>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -319,7 +252,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
         </div>
         
         <div style={{ marginTop: 16, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          <p>💡 <b>วิธีใช้:</b> กดที่วันที่เพื่อบันทึกการส่งยอด ({formatBaht(defaultDailyAmt)}) อัตโนมัติ</p>
+          <p>💡 <b>วิธีใช้:</b> กดที่วันที่เพื่อบันทึกการส่งยอด ({(loan.loan_type === 'bullet' || loan.loan_type === 'upfront') ? 'ก้อนเดียว' : formatBaht(defaultDailyAmt)}) อัตโนมัติ</p>
           <p>✅ = ส่งยอดแล้ว</p>
         </div>
       </div>
