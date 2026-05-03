@@ -44,11 +44,9 @@ export function daysDiff(from: string, to: string): number {
 }
 
 export function isOverdue(dueDateStr: string): boolean {
-  try {
-    return isAfter(new Date(), parseISO(dueDateStr))
-  } catch {
-    return false
-  }
+  if (!dueDateStr) return false
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  return todayStr > dueDateStr
 }
 
 export function loanTypeLabel(type: string): string {

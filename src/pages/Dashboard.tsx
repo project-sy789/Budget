@@ -33,7 +33,7 @@ export default function Dashboard() {
       const isPrincipalPaid = paidPrincipal >= l.principal && l.principal > 0
       if (isPrincipalPaid) return false
 
-      const isPastDue = todayStr >= l.due_date
+      const isPastDue = todayStr > l.due_date
       const hasPaidToday = loanPayments.some(p => p.payment_date === todayStr)
       return isPastDue && !hasPaidToday
     })

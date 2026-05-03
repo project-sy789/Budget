@@ -293,7 +293,7 @@ export default function Agents() {
                       const todayStr = format(new Date(), 'yyyy-MM-dd')
                       const todayPayment = payments.find(p => p.loan_id === loan.id && p.payment_date === todayStr)
                       const hasPaid = !!todayPayment
-                      const isOverdue = loan.status === 'overdue' || (new Date() > new Date(loan.due_date) && loan.status === 'active')
+                      const isOverdue = loan.status === 'overdue' || (todayStr > loan.due_date && loan.status === 'active')
                       
                       return (
                         <tr key={loan.id} className={`${hasPaid ? 'row-success' : ''} ${isOverdue && !hasPaid ? 'row-overdue' : ''}`}>
