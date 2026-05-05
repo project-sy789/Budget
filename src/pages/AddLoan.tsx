@@ -344,7 +344,7 @@ export default function AddLoan() {
 
     // 🎯 Override with total_target if specified
     const target = parseFloat(form.total_target)
-    if (result && target > 0) {
+    if (result && target > 0 && (form.loan_type === 'bullet' || form.loan_type === 'upfront')) {
       result.summary = result.summary.map((item: any) => {
         if (item.isTotal) {
           return { ...item, value: formatBaht(target) }
@@ -607,28 +607,32 @@ export default function AddLoan() {
                     </select>
                   </div>
 
-                  <div className="divider" style={{ margin: '12px 0' }} />
+                  {(form.loan_type === 'bullet' || form.loan_type === 'upfront') && (
+                    <>
+                      <div className="divider" style={{ margin: '12px 0' }} />
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>🎯 ยอดจบที่ต้องการ (ล็อกยอดถ้วน)</label>
-                    <div style={{ position: 'relative' }}>
-                      <input 
-                        className="form-input" 
-                        type="number" 
-                        placeholder="เช่น 20000" 
-                        value={form.total_target} 
-                        onChange={e => {
-                          set('total_target', e.target.value)
-                          syncFromTotal(e.target.value)
-                        }}
-                        style={{ border: '1px solid var(--gold)', background: 'var(--gold-glow)' }}
-                      />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: '0.9rem' }}>฿</span>
-                    </div>
-                    <p className="form-hint" style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: '0.75rem' }}>
-                      * ใช้เป็น <strong>"ยอดรวม"</strong> ในรายงาน LINE ทันที
-                    </p>
-                  </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>🎯 ยอดจบที่ต้องการ (ล็อกยอดถ้วน)</label>
+                        <div style={{ position: 'relative' }}>
+                          <input 
+                            className="form-input" 
+                            type="number" 
+                            placeholder="เช่น 20000" 
+                            value={form.total_target} 
+                            onChange={e => {
+                              set('total_target', e.target.value)
+                              syncFromTotal(e.target.value)
+                            }}
+                            style={{ border: '1px solid var(--gold)', background: 'var(--gold-glow)' }}
+                          />
+                          <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: '0.9rem' }}>฿</span>
+                        </div>
+                        <p className="form-hint" style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: '0.75rem' }}>
+                          * ใช้เป็น <strong>"ยอดรวม"</strong> ในรายงาน LINE ทันที
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Dates Section */}
