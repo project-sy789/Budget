@@ -23,7 +23,7 @@ export interface Loan {
   borrower_phone: string
   borrower_address: string
   borrower_id_card: string
-  loan_type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'upfront' | 'bullet' | 'reducing'
+  loan_type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'upfront' | 'bullet' | 'reducing' | 'daily_installment'
   principal: number
   interest_rate: number
   interest_period: 'daily' | 'weekly' | 'monthly' | 'yearly'
