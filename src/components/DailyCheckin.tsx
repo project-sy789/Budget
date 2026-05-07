@@ -4,7 +4,7 @@ import { th } from 'date-fns/locale'
 import type { Loan, Payment } from '../lib/supabase'
 import { useStore } from '../store/useStore'
 import { formatBaht } from '../lib/formatters'
-import { calcDailyFlat } from '../lib/calculations'
+import { calcDailyFlat, calcAccruedInterest } from '../lib/calculations'
 
 interface Props {
   loan: Loan
@@ -85,21 +85,20 @@ export default function DailyCheckin({ loan, payments }: Props) {
     if (hasPayments) return
     const totalPaidPrincipal = payments.reduce((s, p) => s + (p.principal_paid || 0), 0)
     const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
-    // Calculate total interest owed based on loan type
-    let totalOwedInterest = 0
-    if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
-      const contractDays = Math.max(1, differenceInDays(dueDate, startDate) + (loan.include_first_day ? 1 : 0))
-      if (loan.total_target && loan.total_target > loan.principal) {
-        totalOwedInterest = loan.total_target - loan.principal
-      } else {
-        totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * contractDays
-      }
-    } else {
-      const daysElapsed = Math.max(0, differenceInDays(new Date(), startDate))
-      totalOwedInterest = loan.principal * (dailyInfo.dailyInterest / loan.principal) * daysElapsed
-    }
+    const totalOwedInterest = calcAccruedInterest(
+      loan.loan_type,
+      loan.principal,
+      loan.interest_rate,
+      loan.interest_period,
+      loan.start_date,
+      dateStr,
+      loan.include_first_day,
+      payments
+    )
 
-    const totalPaidInterest = payments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+    const totalPaidInterest = payments
+      .filter(p => p.payment_date <= dateStr)
+      .reduce((s, p) => s + (p.interest_paid || 0), 0)
     const outstandingInterest = Math.max(0, totalOwedInterest - totalPaidInterest)
 
     // For Bullet loans, always pay the full remaining balance
