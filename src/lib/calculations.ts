@@ -245,7 +245,11 @@ export function calcAccruedInterest(
       
       const currentPrincipal = Math.max(0, principal - paidBefore)
       if (currentPrincipal > 0) {
-        totalAccrued += principal * dailyRate
+        if (loanType === 'weekly' || loanType === 'monthly') {
+          totalAccrued += principal * dailyRate
+        } else {
+          totalAccrued += currentPrincipal * dailyRate
+        }
       } else {
         break
       }

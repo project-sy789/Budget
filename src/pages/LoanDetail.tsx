@@ -91,8 +91,11 @@ export default function LoanDetail() {
       
       const currentPrincipal = Math.max(0, loan.principal - principalPaidBefore)
       if (currentPrincipal > 0) {
-        // Option B: Interest is fixed based on initial principal until fully paid
-        totalAccrued += loan.principal * dailyRate
+        if (loan.loan_type === 'weekly' || loan.loan_type === 'monthly') {
+          totalAccrued += loan.principal * dailyRate
+        } else {
+          totalAccrued += currentPrincipal * dailyRate
+        }
       } else {
         // Stop accruing interest the day after the principal reaches zero
         break
