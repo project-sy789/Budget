@@ -158,8 +158,26 @@ export const useStore = create<AppState>((set) => ({
   },
 
   deletePayment: async (id) => {
+    const { payments, loans } = useStore.getState()
+    const payment = payments.find(p => p.id === id)
     await supabase.from('payments').delete().eq('id', id)
     set(s => ({ payments: s.payments.filter(p => p.id !== id) }))
+    
+    if (payment) {
+      const loan = loans.find(l => l.id === payment.loan_id)
+      if (loan) {
+        const newPayments = useStore.getState().payments.filter(p => p.loan_id === loan.id)
+        const paidPrincipal = newPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+        const paidInterest = newPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
+        const accruedInt = calcAccruedInterest(loan.loan_type, loan.principal, loan.interest_rate, loan.interest_period, loan.start_date, loan.due_date, loan.include_first_day, newPayments)
+
+        if (paidPrincipal >= loan.principal && paidInterest >= (accruedInt - 1)) {
+          if (loan.status !== 'closed') await useStore.getState().updateLoan(loan.id, { status: 'closed' })
+        } else {
+          if (loan.status === 'closed') await useStore.getState().updateLoan(loan.id, { status: 'active' })
+        }
+      }
+    }
   },
   
   updatePayment: async (id: string, payment: Partial<Payment>) => {
@@ -178,7 +196,7 @@ export const useStore = create<AppState>((set) => ({
 
         if (paidPrincipal >= loan.principal && paidInterest >= (accruedInt - 1)) {
           if (loan.status !== 'closed') await useStore.getState().updateLoan(loan.id, { status: 'closed' })
-        } else if (paidPrincipal < loan.principal) {
+        } else {
           if (loan.status === 'closed') await useStore.getState().updateLoan(loan.id, { status: 'active' })
         }
       }
