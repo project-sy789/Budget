@@ -121,13 +121,12 @@ export default function Agents() {
     let principalPaid = 0
     let interestPaid = 0
 
-    if (outstandingInterest > 0) {
-      interestPaid = Math.min(amountToPay, outstandingInterest)
-      principalPaid = Math.max(0, amountToPay - interestPaid)
-    } else {
-      interestPaid = 0
-      principalPaid = amountToPay
-    }
+    const totalPaidPrincipal = loanPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+    const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
+
+    // PRINCIPAL-FIRST ALLOCATION (Explicitly requested by user)
+    principalPaid = Math.min(amountToPay, remainingPrincipal)
+    interestPaid = Math.max(0, amountToPay - principalPaid)
 
     await addPayment({
       loan_id: loan.id,
