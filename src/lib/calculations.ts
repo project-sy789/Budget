@@ -91,6 +91,36 @@ export function calcBullet(
   return { totalInterest, totalRepay: principal + totalInterest }
 }
 
+/** ผ่อนรายวัน flat-rate (installments daily) */
+export function calcDailyInstallment(
+  principal: number,
+  ratePercent: number,
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly',
+  installments: number,
+  startDate: string,
+): AmortRow[] {
+  const dailyRate = toDaily(ratePercent, period)
+  const totalInterest = principal * dailyRate * installments
+  const totalRepay = principal + totalInterest
+  const payment = totalRepay / installments
+  const principalPerPeriod = principal / installments
+  const interestPerPeriod = totalInterest / installments
+  const rows: AmortRow[] = []
+  let balance = principal
+  for (let i = 1; i <= installments; i++) {
+    balance -= principalPerPeriod
+    rows.push({
+      period: i,
+      date: addDays(startDate, i),
+      payment: Math.round(payment * 100) / 100,
+      principal: Math.round(principalPerPeriod * 100) / 100,
+      interest: Math.round(interestPerPeriod * 100) / 100,
+      balance: Math.round(balance * 100) / 100,
+    })
+  }
+  return rows
+}
+
 /** ผ่อนรายอาทิตย์ flat-rate (installments weekly) */
 export function calcWeeklyInstallment(
   principal: number,
@@ -245,7 +275,7 @@ export function calcAccruedInterest(
       
       const currentPrincipal = Math.max(0, principal - paidBefore)
       if (currentPrincipal > 0) {
-        if (loanType === 'weekly' || loanType === 'monthly') {
+        if (loanType === 'weekly' || loanType === 'monthly' || loanType === 'daily_installment') {
           totalAccrued += principal * dailyRate
         } else {
           totalAccrued += currentPrincipal * dailyRate

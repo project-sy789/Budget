@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import {
   calcDailyFlat, calcUpfront, calcBullet,
-  calcWeeklyInstallment, calcMonthlyInstallment, calcReducing
+  calcWeeklyInstallment, calcMonthlyInstallment, calcReducing, calcDailyInstallment
 } from '../lib/calculations'
 import type { AmortRow } from '../lib/calculations'
 import { formatBaht } from '../lib/formatters'
 
 const LOAN_TYPES = [
   { value: 'daily', label: '📅 ดอกรายวัน', desc: 'คิดดอกเบี้ยรายวันบนยอดต้นคงเหลือ' },
+  { value: 'daily_installment', label: '🌞 ผ่อนรายวัน', desc: 'ผ่อนทุกวัน ดอกคงที่' },
   { value: 'weekly', label: '📆 ผ่อนรายอาทิตย์', desc: 'ผ่อนทุกอาทิตย์ ดอกคงที่' },
   { value: 'monthly', label: '🗓️ ผ่อนรายเดือน', desc: 'ผ่อนทุกเดือน ดอกคงที่' },
   { value: 'yearly', label: '🏦 ดอกรายปี', desc: 'คิดดอกเบี้ยเป็นรายปี' },
@@ -298,6 +299,18 @@ export default function AddLoan() {
           { label: `ดอกเบี้ยรวม (จ่ายตอนจบ)`, value: formatBaht(res.totalInterest) },
           { label: 'ยอดจ่ายรวมตอนครบกำหนด', value: formatBaht(res.totalRepay), isTotal: true },
         ], rows: null }
+        break
+      }
+      case 'daily_installment': {
+        const res = calcDailyInstallment(p, r, period, inst, start)
+        const totalInt = res.reduce((s, row) => s + row.interest, 0)
+        result = { summary: [
+          { label: 'เงินต้น', value: formatBaht(p) },
+          { label: `ดอกเบี้ยรวม`, value: formatBaht(totalInt) },
+          { label: `ยอดส่งต่อวัน`, value: formatBaht(res[0]?.payment || 0), isHighlight: true },
+          { label: 'จำนวนงวด', value: `${inst} วัน` },
+          { label: 'ยอดรวมที่ต้องจ่าย', value: formatBaht(p + totalInt), isTotal: true },
+        ], rows: res }
         break
       }
       case 'weekly': {

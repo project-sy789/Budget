@@ -112,9 +112,14 @@ export default function DailyCheckin({ loan, payments }: Props) {
     let interestPaid = 0
     let principalPaid = 0
 
-    // PRINCIPAL-FIRST ALLOCATION (Requested by user)
-    principalPaid = Math.min(amountToPay, remainingPrincipal)
-    interestPaid = Math.max(0, amountToPay - principalPaid)
+    // INTEREST-FIRST ALLOCATION (Standard Financial Practice)
+    if (outstandingInterest > 0) {
+      interestPaid = Math.min(amountToPay, outstandingInterest)
+      principalPaid = Math.max(0, amountToPay - interestPaid)
+    } else {
+      interestPaid = 0
+      principalPaid = amountToPay
+    }
 
     await addPayment({
       loan_id: loan.id,

@@ -91,7 +91,7 @@ export default function LoanDetail() {
       
       const currentPrincipal = Math.max(0, loan.principal - principalPaidBefore)
       if (currentPrincipal > 0) {
-        if (loan.loan_type === 'weekly' || loan.loan_type === 'monthly') {
+        if (loan.loan_type === 'weekly' || loan.loan_type === 'monthly' || loan.loan_type === 'daily_installment') {
           totalAccrued += loan.principal * dailyRate
         } else {
           totalAccrued += currentPrincipal * dailyRate
