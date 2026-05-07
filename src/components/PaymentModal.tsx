@@ -59,9 +59,9 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
       p = Math.min(a, remainingPrincipal)
       i = Math.max(0, a - p)
     } else {
-      // Regular payment: INTEREST-FIRST LOGIC
-      i = Math.min(accruedAtDate, a)
-      p = Math.max(0, a - i)
+      // PRINCIPAL-FIRST LOGIC (Requested by user)
+      p = Math.min(a, remainingPrincipal)
+      i = Math.max(0, a - p)
     }
     
     setPrincipalPaid(p.toFixed(2))
