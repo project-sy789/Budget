@@ -73,29 +73,35 @@ export const useStore = create<AppState>((set) => ({
           const paidInterest = loanPayments.reduce((s, p) => s + (p.interest_paid || 0), 0)
           const accruedInt = calcAccruedInterest(l.loan_type, l.principal, l.interest_rate, l.interest_period, l.start_date, l.due_date, l.include_first_day, loanPayments)
 
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const dueDate = new Date(l.due_date)
+
+          const hasRestructurePayment = loanPayments.some(p =>
+            p.notes && (p.notes as string).includes('ปิดยอดเพื่อปรับโครงสร้าง')
+          )
+
           if (l.status === 'active' || l.status === 'overdue') {
-            // จบยอดคือจ่ายครบต้นดอก (Allow 1 baht rounding error)
-            if (paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0) {
+            if (hasRestructurePayment) {
+              // มี payment ปรับโครงสร้าง → ควรเป็น restructured
+              await supabase.from('loans').update({ status: 'restructured' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'restructured' } : loan) }))
+            } else if (paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0) {
+              // จ่ายครบทั้งต้นและดอก → ปิด
+              await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
+            } else if (today > dueDate && paidPrincipal >= l.principal && l.principal > 0) {
+              // เลยกำหนดแล้ว + จ่ายต้นครบ → ปิด (ดอกครบตามสัญญาแล้ว)
               await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
             }
-          } else if (l.status === 'closed') {
-            // ถ้าถูกปิดเพื่อปรับโครงสร้าง → คืน status เป็น 'restructured'
-            const hasRestructurePayment = loanPayments.some(p =>
-              p.notes && (p.notes as string).includes('ปิดยอดเพื่อปรับโครงสร้าง')
-            )
-            if (hasRestructurePayment) {
-              await supabase.from('loans').update({ status: 'restructured' }).eq('id', l.id)
-              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'restructured' } : loan) }))
-            } else {
-              // Heal: ปิดโดย bug เก่า (จ่ายต้นครบแต่ดอกยังไม่ครบ) → เปิดคืน
-              const fullyPaid = paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0
-              if (!fullyPaid) {
-                await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
-                set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
-              }
-            }
+          } else if (l.status === 'closed' && hasRestructurePayment) {
+            // closed แต่ควรเป็น restructured → แก้ให้ถูก
+            await supabase.from('loans').update({ status: 'restructured' }).eq('id', l.id)
+            set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'restructured' } : loan) }))
           }
+          // ไม่เคย reopen loans ที่ปิดถูกต้องแล้ว
+
         })
       }
     } else {
