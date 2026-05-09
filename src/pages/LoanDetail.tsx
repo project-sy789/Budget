@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { formatBaht, formatDate, isOverdue, loanTypeLabel, loanTypeBadgeClass, statusBadgeClass, statusLabel } from '../lib/formatters'
-import { calcDailyFlat, calcRemainingBalance } from '../lib/calculations'
+import { calcRemainingBalance, calcAccruedInterest } from '../lib/calculations'
 import { differenceInDays, parseISO, addDays, format } from 'date-fns'
 import PaymentModal from '../components/PaymentModal'
 import DailyCheckin from '../components/DailyCheckin'
@@ -53,56 +53,19 @@ export default function LoanDetail() {
   const isPrincipalPaid = paidPrincipal >= loan.principal && loan.principal > 0
   const overdue = loan.status === 'active' && isOverdue(loan.due_date) && !hasPaidToday && !isPrincipalPaid
  
-  // 💡 Smart Accrued Interest Calculation (Daily Accrual Logic)
-  const accruedInterest = useMemo(() => {
-    // For non-daily periods (weekly/monthly flat-rate with installments)
-    if (loan.interest_period !== 'daily' && loan.installments && loan.installments > 0) {
-      const totalInterest = (loan.principal * loan.interest_rate) / 100
-      const interestPerInst = totalInterest / loan.installments
-      return interestPerInst * Math.min(daysElapsed, loan.installments)
-    }
-
-    // For Daily Flat/Naive Interest (Iterate day by day to check remaining principal)
-    let dailyRate = 0
-    if (loan.interest_period === 'daily') dailyRate = loan.interest_rate / 100
-    else if (loan.interest_period === 'weekly') dailyRate = loan.interest_rate / 100 / 7
-    else if (loan.interest_period === 'monthly') dailyRate = loan.interest_rate / 100 / 30
-    else if (loan.interest_period === 'yearly') dailyRate = loan.interest_rate / 100 / 365
-    else dailyRate = loan.interest_rate / 100 / 30 // fallback
-
-    // For Bullet or Upfront: Accrued interest is fixed based on the contract duration
-    if (loan.loan_type === 'bullet' || loan.loan_type === 'upfront') {
-      const contractDays = Math.max(1, differenceInDays(parseISO(loan.due_date), parseISO(loan.start_date)) + (loan.include_first_day ? 1 : 0))
-      return loan.principal * dailyRate * contractDays
-    }
-
-    let totalAccrued = 0
-    const start = parseISO(loan.start_date)
-
-    for (let i = 0; i < daysElapsed; i++) {
-      const currentDate = addDays(start, i)
-      const dStr = format(currentDate, 'yyyy-MM-dd')
-
-      // Calculate principal paid STRICTLY BEFORE this day
-      // (Interest is charged for the day the borrower possesses the capital)
-      const principalPaidBefore = loanPayments
-        .filter(p => p.payment_date < dStr)
-        .reduce((sum, p) => sum + (p.principal_paid || 0), 0)
-      
-      const currentPrincipal = Math.max(0, loan.principal - principalPaidBefore)
-      if (currentPrincipal > 0) {
-        if (loan.loan_type === 'weekly' || loan.loan_type === 'monthly' || loan.loan_type === 'daily_installment') {
-          totalAccrued += loan.principal * dailyRate
-        } else {
-          totalAccrued += currentPrincipal * dailyRate
-        }
-      } else {
-        // Stop accruing interest the day after the principal reaches zero
-        break
-      }
-    }
-    return totalAccrued
-  }, [loan, loanPayments, daysElapsed])
+  // 💡 ใช้ calcAccruedInterest จาก calculations.ts (unified logic ตรงกับ auto-close)
+  const accruedInterest = useMemo(() =>
+    calcAccruedInterest(
+      loan.loan_type,
+      loan.principal,
+      loan.interest_rate,
+      loan.interest_period,
+      loan.start_date,
+      loan.due_date,
+      loan.include_first_day,
+      loanPayments
+    )
+  , [loan, loanPayments])
 
   const outstandingInterest = Math.max(accruedInterest - paidInterest, 0)
 

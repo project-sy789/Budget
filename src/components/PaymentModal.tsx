@@ -162,7 +162,7 @@ export default function PaymentModal({ loan, accruedInterest, remainingPrincipal
               />
               {!isClosing && !payment && (
                 <div className="form-hint" style={{ color: 'var(--success)', fontWeight: 500, marginTop: 4 }}>
-                  ✨ ระบบจะนำไปหัก "ดอกเบี้ย" ให้ก่อนจนกว่าจะหมด
+                  ✨ ระบบตัด <strong>เงินต้น</strong> ก่อน แล้วค่อยตัดดอก
                 </div>
               )}
             </div>
