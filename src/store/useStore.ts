@@ -79,8 +79,14 @@ export const useStore = create<AppState>((set) => ({
               await supabase.from('loans').update({ status: 'closed' }).eq('id', l.id)
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
             }
+          } else if (l.status === 'closed') {
+            // Heal: ถ้าถูกปิดโดย bug เก่า (จ่ายต้นครบแต่ดอกยังไม่ครบ) ให้เปิดคืน
+            const fullyPaid = paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0
+            if (!fullyPaid) {
+              await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
+            }
           }
-          // Note: We removed the 'Auto-reopen' logic to respect manual closures and discounts.
         })
       }
     } else {
