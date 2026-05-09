@@ -80,11 +80,20 @@ export const useStore = create<AppState>((set) => ({
               set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'closed' } : loan) }))
             }
           } else if (l.status === 'closed') {
-            // Heal: ถ้าถูกปิดโดย bug เก่า (จ่ายต้นครบแต่ดอกยังไม่ครบ) ให้เปิดคืน
-            const fullyPaid = paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0
-            if (!fullyPaid) {
-              await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
-              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
+            // ถ้าถูกปิดเพื่อปรับโครงสร้าง → คืน status เป็น 'restructured'
+            const hasRestructurePayment = loanPayments.some(p =>
+              p.notes && (p.notes as string).includes('ปิดยอดเพื่อปรับโครงสร้าง')
+            )
+            if (hasRestructurePayment) {
+              await supabase.from('loans').update({ status: 'restructured' }).eq('id', l.id)
+              set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'restructured' } : loan) }))
+            } else {
+              // Heal: ปิดโดย bug เก่า (จ่ายต้นครบแต่ดอกยังไม่ครบ) → เปิดคืน
+              const fullyPaid = paidPrincipal >= l.principal && paidInterest >= (accruedInt - 1) && l.principal > 0
+              if (!fullyPaid) {
+                await supabase.from('loans').update({ status: 'active' }).eq('id', l.id)
+                set(s => ({ loans: s.loans.map(loan => loan.id === l.id ? { ...loan, status: 'active' } : loan) }))
+              }
             }
           }
         })
