@@ -10,24 +10,26 @@ export default function RepairData() {
   const [total, setTotal] = useState(0)
 
   const runRepair = async () => {
-    if (!confirm('ยืนยันการซ่อมแซมข้อมูล? ข้อมูลการชำระเงินในอดีตจะถูกคำนวณสัดส่วนใหม่ทั้งหมดแบบ "ตัดต้นก่อน"')) return
+    if (!confirm('ยืนยันการซ่อมแซมข้อมูล?\n\nระบบจะ re-allocate รายการชำระของ loan ประเภท ดอกรายวัน / ผ่อนรายอาทิตย์ / ผ่อนรายเดือน ให้เป็น "ตัดต้นก่อน" ทั้งหมด\n\n(loan ประเภท เงินก้อน+ดอก และ ดอกหน้า จะไม่ถูกแตะต้อง)')) return
     
     setIsRunning(true)
     setStatus('กำลังเริ่มการซ่อมแซม...')
     
     try {
-      // 1. Fetch all loans
+      // Loan types that use principal-first allocation
+      const principalFirstTypes = ['daily', 'weekly', 'monthly', 'daily_installment', 'reducing']
+
       const { data: loans, error: loanErr } = await supabase.from('loans').select('*')
       if (loanErr) throw loanErr
       if (!loans) return
       
-      setTotal(loans.length)
+      const targetLoans = loans.filter(l => principalFirstTypes.includes(l.loan_type))
+      setTotal(targetLoans.length)
       let count = 0
       
-      for (const loan of loans) {
-        setStatus(`กำลังซ่อมลูกหนี้: ${loan.borrower_name} (${count + 1}/${loans.length})`)
+      for (const loan of targetLoans) {
+        setStatus(`กำลังซ่อม: ${loan.borrower_name} (${count + 1}/${targetLoans.length})`)
         
-        // 2. Fetch all payments for this loan
         const { data: payments, error: payErr } = await supabase
           .from('payments')
           .select('*')
@@ -36,36 +38,30 @@ export default function RepairData() {
           .order('created_at', { ascending: true })
           
         if (payErr) throw payErr
-        if (!payments || payments.length === 0) {
-          count++
-          setProgress(Math.round((count / loans.length) * 100))
-          continue
-        }
+        if (!payments || payments.length === 0) { count++; setProgress(Math.round((count / targetLoans.length) * 100)); continue }
         
         let remainingPrincipal = loan.principal
         
         for (const payment of payments) {
-          // Calculate new split
+          // Skip restructure closing payments — they have specific allocation
+          if (payment.notes && payment.notes.includes('ปิดยอดเพื่อปรับโครงสร้าง')) continue
+
           const p = Math.min(remainingPrincipal, payment.amount)
           const i = Math.max(0, payment.amount - p)
           
-          // Only update if changed
-          if (payment.principal_paid !== p || payment.interest_paid !== i) {
+          if (Math.abs((payment.principal_paid || 0) - p) > 0.01 || Math.abs((payment.interest_paid || 0) - i) > 0.01) {
             const { error: updErr } = await supabase
               .from('payments')
-              .update({ 
-                principal_paid: p, 
-                interest_paid: i 
-              })
+              .update({ principal_paid: p, interest_paid: i })
               .eq('id', payment.id)
             if (updErr) throw updErr
           }
           
-          remainingPrincipal -= p
+          remainingPrincipal = Math.max(0, remainingPrincipal - p)
         }
         
         count++
-        setProgress(Math.round((count / loans.length) * 100))
+        setProgress(Math.round((count / targetLoans.length) * 100))
       }
       
       setStatus('✅ ซ่อมแซมข้อมูลเสร็จสมบูรณ์!')
@@ -79,6 +75,7 @@ export default function RepairData() {
       setIsRunning(false)
     }
   }
+
 
   return (
     <div className="page-content fade-in">
