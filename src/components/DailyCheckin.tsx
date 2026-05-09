@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { format, parseISO, isAfter, isToday, differenceInDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import type { Loan, Payment } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useStore } from '../store/useStore'
 import { formatBaht } from '../lib/formatters'
 import { calcDailyFlat, calcAccruedInterest } from '../lib/calculations'
@@ -83,8 +84,19 @@ export default function DailyCheckin({ loan, payments }: Props) {
 
   const handleQuickPay = async (dateStr: string, hasPayments: boolean) => {
     if (hasPayments) return
-    const totalPaidPrincipal = payments.reduce((s, p) => s + (p.principal_paid || 0), 0)
+
+    setSavingDate(dateStr)
+
+    // ดึง payments สดจาก DB เสมอ (ป้องกัน stale props หลังลบ)
+    const { data: freshPayments } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('loan_id', loan.id)
+
+    const allPayments = freshPayments || payments
+    const totalPaidPrincipal = allPayments.reduce((s, p) => s + (p.principal_paid || 0), 0)
     const remainingPrincipal = Math.max(0, loan.principal - totalPaidPrincipal)
+
     const totalOwedInterest = calcAccruedInterest(
       loan.loan_type,
       loan.principal,
@@ -93,28 +105,25 @@ export default function DailyCheckin({ loan, payments }: Props) {
       loan.start_date,
       dateStr,
       loan.include_first_day,
-      payments
+      allPayments
     )
 
-    const totalPaidInterest = payments
+    const totalPaidInterest = allPayments
       .filter(p => p.payment_date <= dateStr)
       .reduce((s, p) => s + (p.interest_paid || 0), 0)
     const outstandingInterest = Math.max(0, totalOwedInterest - totalPaidInterest)
 
-    // For Bullet loans, always pay the full remaining balance
     const amountToPay = loan.loan_type === 'bullet' ? (remainingPrincipal + outstandingInterest) : defaultDailyAmt
-    if (amountToPay <= 0) return
+    if (amountToPay <= 0) { setSavingDate(null); return }
 
-    if (!confirm(`บันทึกชำระเงินสด ${formatBaht(amountToPay)} สำหรับวันที่ ${format(parseISO(dateStr), 'd MMM', { locale: th })} ใช่หรือไม่?`)) return
-    
-    setSavingDate(dateStr)
-    
-    let interestPaid = 0
-    let principalPaid = 0
+    if (!confirm(`บันทึกชำระเงินสด ${formatBaht(amountToPay)} สำหรับวันที่ ${format(parseISO(dateStr), 'd MMM', { locale: th })} ใช่หรือไม่?`)) {
+      setSavingDate(null)
+      return
+    }
 
-    // PRINCIPAL-FIRST ALLOCATION (Explicitly requested by user)
-    principalPaid = Math.min(amountToPay, remainingPrincipal)
-    interestPaid = Math.max(0, amountToPay - principalPaid)
+    // PRINCIPAL-FIRST ALLOCATION
+    const principalPaid = Math.min(amountToPay, remainingPrincipal)
+    const interestPaid = Math.max(0, amountToPay - principalPaid)
 
     await addPayment({
       loan_id: loan.id,
@@ -128,6 +137,7 @@ export default function DailyCheckin({ loan, payments }: Props) {
     })
     setSavingDate(null)
   }
+
 
   const generateReportText = () => {
     const startMonthName = format(startDate, 'MMMM', { locale: th })
