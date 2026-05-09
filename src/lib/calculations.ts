@@ -258,9 +258,12 @@ export function calcAccruedInterest(
     // Fixed amount for the contract period
     const contractDays = Math.max(1, differenceInDays(due, start) + (includeFirstDay ? 1 : 0))
     return principal * dailyRate * contractDays
-  } else {
-    // Accumulates daily until today, but STOPS if principal reaches zero
-    const daysElapsed = Math.max(0, differenceInDays(today, start))
+  } else if (loanType === 'daily') {
+    // ดอกรายวัน: ดอกคิดบนยอดต้นคงเหลือทุกวัน
+    // ดอกต้องคิดถึงวันครบกำหนด (หรือวันนี้ถ้าเลยกำหนดแล้ว)
+    // แม้จ่ายต้นครบแล้ว ดอกยังต้องคิดถึงวันครบกำหนดตามสัญญา
+    const endDate = today < due ? today : due
+    const daysElapsed = Math.max(0, differenceInDays(endDate, start))
     let totalAccrued = 0
 
     for (let i = 0; i < daysElapsed; i++) {
@@ -274,15 +277,18 @@ export function calcAccruedInterest(
         .reduce((sum, p) => sum + (p.principal_paid || 0), 0)
       
       const currentPrincipal = Math.max(0, principal - paidBefore)
-      if (currentPrincipal > 0) {
-        if (loanType === 'weekly' || loanType === 'monthly' || loanType === 'daily_installment') {
-          totalAccrued += principal * dailyRate
-        } else {
-          totalAccrued += currentPrincipal * dailyRate
-        }
-      } else {
-        break
-      }
+      // คิดดอกบนยอดต้นคงเหลือ ถ้าต้น = 0 ก็ยังต้องคิดดอกต่อ (สัญญายังไม่ครบกำหนด)
+      // จะปิดได้ก็ต่อเมื่อจ่ายดอกครบทุกวันตามสัญญาด้วย
+      totalAccrued += currentPrincipal * dailyRate
+    }
+    return totalAccrued
+  } else {
+    // weekly, monthly, daily_installment: คิดดอกบนต้นเต็มทุกงวด ไม่หยุดเมื่อต้น = 0
+    const daysElapsed = Math.max(0, differenceInDays(today, start))
+    let totalAccrued = 0
+
+    for (let i = 0; i < daysElapsed; i++) {
+      totalAccrued += principal * dailyRate
     }
     return totalAccrued
   }
